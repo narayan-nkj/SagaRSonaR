@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-void: var(--theme-color-void);
+  --color-surface: var(--theme-color-surface);
+  --color-elevated: var(--theme-color-elevated);
+  --color-border: var(--theme-color-border);
+  --color-text-primary: var(--theme-color-text-primary);
+  --color-text-secondary: var(--theme-color-text-secondary);
+  --color-text-muted: var(--theme-color-text-muted);
+
+  /* Accent & Status */
+  --color-accent:   var(--theme-color-accent);
+  --color-cyan:     var(--theme-color-cyan);
+  --color-danger:   #FF4D4D;
+  --color-warning:  #FFB547;
+  --color-success:  #4ADE80;
+
+  /* Typography — razor-thin sans-serif */
+  --font-display: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-serif: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Glassmorphism */
+  --color-glass: var(--theme-color-glass);
+  --color-glass-strong: var(--theme-color-glass-strong);
+  --color-glass-border: var(--theme-color-glass-border);
+  --color-glass-border-strong: var(--theme-color-glass-border-strong);
+}
+
+/* ═══════════════════════════════════════════════════
+   DARK MODE — Matte Black Void
+   ═══════════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --theme-color-void:           #000000;
+  --theme-color-surface:        #0A0A0A;
+  --theme-color-elevated:       #111111;
+  --theme-color-border:         #1A1A1A;
+  --theme-color-text-primary:   #E8E8E8;
+  --theme-color-text-secondary: #888888;
+  --theme-color-text-muted:     #555555;
+
+  --theme-color-accent:  #7DD3FC;
+  --theme-color-cyan:    #67E8F9;
+
+  --theme-shadow: 0 0 0 0 transparent;
+  --theme-radius: 0.5rem;
+  --theme-border-width: 1px;
+  --theme-backdrop: none;
+
+  --glow-accent: 0 0 20px rgba(125, 211, 252, 0.08);
+  --glow-hover:  0 0 40px rgba(125, 211, 252, 0.06);
+
+  --theme-color-glass: rgba(255, 255, 255, 0.05);
+  --theme-color-glass-strong: rgba(255, 255, 255, 0.1);
+  --theme-color-glass-border: rgba(255, 255, 255, 0.1);
+  --theme-color-glass-border-strong: rgba(255, 255, 255, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════
+   LIGHT MODE — Near White Void
+   ═══════════════════════════════════════════════════ */
+[data-theme="light"] {
+  --theme-color-void:           #E2E8F0;
+  --theme-color-surface:        #F8FAFC;
+  --theme-color-elevated:       #FFFFFF;
+  --theme-color-border:         #94A3B8;
+  --theme-color-text-primary:   #0F172A;
+  --theme-color-text-secondary: #334155;
+  --theme-color-text-muted:     #475569;
+
+  --theme-color-accent:  #0EA5E9;
+  --theme-color-cyan:    #06B6D4;
+
+  --theme-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --theme-radius: 0.5rem;
+  --theme-border-width: 1px;
+  --theme-backdrop: none;
+
+  --glow-accent: 0 0 20px rgba(14, 165, 233, 0.06);
+  --glow-hover:  0 0 40px rgba(14, 165, 233, 0.04);
+
+  --theme-color-glass: rgba(0, 0, 0, 0.08);
+  --theme-color-glass-strong: rgba(0, 0, 0, 0.15);
+  --theme-color-glass-border: rgba(0, 0, 0, 0.3);
+  --theme-color-glass-border-strong: rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════
+   PANELS & CARDS — Extreme Depth
+   ═══════════════════════════════════════════════════ */
+.theme-panel {
+  background-color: var(--theme-color-surface);
+  border-radius: var(--theme-radius);
+  border: var(--theme-border-width) solid var(--theme-color-border);
+  box-shadow: var(--theme-shadow);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-luxe {
+  background-color: var(--theme-color-surface);
+  border: 1px solid var(--theme-color-border);
+  border-radius: var(--theme-radius);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-luxe:hover {
+  border-color: var(--theme-color-accent);
+  box-shadow: var(--glow-hover);
+}
+
+.gold-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--theme-color-border), transparent);
+  width: 100%;
+}
+
+.gold-line-solid {
+  height: 1px;
+  background-color: var(--theme-color-border);
+  width: 100%;
+}
+
+.theme-transition {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ═══════════════════════════════════════════════════
+   BASE STYLES
+   ═══════════════════════════════════════════════════ */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--theme-color-void);
+    color: var(--theme-color-text-primary);
+    font-family: var(--font-sans);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                color 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  ::selection {
+    background: rgba(125, 211, 252, 0.15);
+    color: var(--theme-color-accent);
+  }
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--theme-color-border);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-color-text-muted);
+  }
+
+  .custom-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   MAP OVERRIDES
+   ═══════════════════════════════════════════════════ */
+.maplibregl-popup-content {
+  background-color: var(--theme-color-surface) !important;
+  color: var(--theme-color-text-primary) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--theme-color-border) !important;
+  box-shadow: var(--glow-accent) !important;
+  backdrop-filter: blur(12px) !important;
+}
+.maplibregl-popup-tip {
+  border-top-color: var(--theme-color-border) !important;
+  border-bottom-color: var(--theme-color-border) !important;
+}
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════
+   FORM CONTROLS
+   ═══════════════════════════════════════════════════ */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--theme-color-border);
+  border-radius: 9999px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--theme-color-accent);
+  border-radius: 50%;
+  border: none;
+  margin-top: -5px;
+  cursor: pointer;
+  box-shadow: var(--glow-accent);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: var(--glow-hover);
+}
+
+/* ═══════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════ */
+@keyframes scan {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes ping-slow {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%       { transform: scale(1.5); opacity: 0; }
+}
+.animate-ping-slow {
+  animation: ping-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes waterfall {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 1000px; }
+}
+@keyframes scanline {
+  0% { top: -5%; }
+  100% { top: 105%; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Force maplibre canvas to always stretch to container to prevent visual blanking during flex animations */
+.maplibregl-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  outline: none !important;
+}
