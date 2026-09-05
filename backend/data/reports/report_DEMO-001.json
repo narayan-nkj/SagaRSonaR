@@ -1,0 +1,51 @@
+{
+    "mission": {
+        "id": "DEMO-001",
+        "name": "Harbor Survey Alpha",
+        "status": "NEW"
+    },
+    "statistics": {
+        "total_images": 3,
+        "total_detections": 3,
+        "total_anomalies": 3,
+        "high_risk": 2,
+        "critical": 0,
+        "average_confidence": 0.685,
+        "estimated_debris_area": 22296.0,
+        "detections_by_class": {
+            "ghost_net": 1,
+            "fishing_gear": 1,
+            "unknown_man_made_object": 1
+        },
+        "detections_by_risk": {
+            "HIGH": 2,
+            "MEDIUM": 1
+        }
+    },
+    "anomalies": [
+        {
+            "anomaly_id": "ANOM-4BD5CC0E",
+            "type": "ghost_net",
+            "confidence": 0.714,
+            "risk_level": "HIGH",
+            "latitude": 18.42156811045715,
+            "longitude": 72.81399121798556
+        },
+        {
+            "anomaly_id": "ANOM-A67F9148",
+            "type": "unknown_man_made_object",
+            "confidence": 0.671,
+            "risk_level": "MEDIUM",
+            "latitude": 18.421646958948017,
+            "longitude": 72.81405708776929
+        },
+        {
+            "anomaly_id": "ANOM-38B8B826",
+            "type": "fishing_gear",
+            "confidence": 0.67,
+            "risk_level": "HIGH",
+            "latitude": 18.421699055259886,
+            "longitude": 72.81410060890951
+        }
+    ]
+}

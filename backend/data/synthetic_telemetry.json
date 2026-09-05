@@ -1,0 +1,37 @@
+{
+    "dummy_sonar_4.jpg": {
+        "latitude": 25.008978,
+        "longitude": -74.998758,
+        "heading": 299.0,
+        "sonar_range": 90.88,
+        "timestamp": "2026-09-04T12:00:00Z"
+    },
+    "dummy_sonar_0.jpg": {
+        "latitude": 24.99062,
+        "longitude": -75.004009,
+        "heading": 286.05,
+        "sonar_range": 54.54,
+        "timestamp": "2026-09-04T12:00:00Z"
+    },
+    "dummy_sonar_1.jpg": {
+        "latitude": 25.009859,
+        "longitude": -74.998037,
+        "heading": 198.84,
+        "sonar_range": 89.7,
+        "timestamp": "2026-09-04T12:00:00Z"
+    },
+    "dummy_sonar_3.jpg": {
+        "latitude": 24.9957,
+        "longitude": -74.998041,
+        "heading": 36.91,
+        "sonar_range": 93.98,
+        "timestamp": "2026-09-04T12:00:00Z"
+    },
+    "dummy_sonar_2.jpg": {
+        "latitude": 25.009698,
+        "longitude": -74.999081,
+        "heading": 214.67,
+        "sonar_range": 95.62,
+        "timestamp": "2026-09-04T12:00:00Z"
+    }
+}

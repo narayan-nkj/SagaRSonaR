@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - APP_ENV=development
+      - DATABASE_URL=sqlite:///./data/sonar_x.db
+      - UPLOAD_DIR=./data/uploads
+      - PROCESSED_DIR=./data/processed
+      - REPORT_DIR=./data/reports
+      - MODEL_DIR=./models
+      - MODEL_PROVIDER=demo
+      - CONFIDENCE_THRESHOLD=0.5
+      - CORS_ORIGINS=["http://localhost:3000"]

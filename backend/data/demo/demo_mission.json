@@ -1,0 +1,11 @@
+{
+    "mission_id": "DEMO-001",
+    "name": "Harbor Survey Alpha",
+    "source": "Simulation",
+    "latitude": 18.42183,
+    "longitude": 72.81421,
+    "depth": 43.7,
+    "heading": 128.4,
+    "vessel_speed": 3.2,
+    "sonar_range": 100
+}
