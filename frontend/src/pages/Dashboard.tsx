@@ -120,7 +120,7 @@ export default function Dashboard() {
       }
       
       setActiveHarbour(nextHarbour);
-    }, 8000); // 8s wait (3.5s animation + 4.5s stay)
+    }, 12000); // 12s wait (3.5s animation + 8.5s stay)
 
     return () => clearInterval(interval);
   }, [isAutoPatrol, activeHarbour, setActiveHarbour]);
@@ -147,14 +147,14 @@ export default function Dashboard() {
             
             {/* Top Ribbons (KPIs) - Responsive Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4 shrink-0">
-              <div className="bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Normal Regions" value={metrics?.normalRegions ?? '--'} icon={CheckCircle} colorClass="text-text-primary" /></div>
-              <div className="bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Known Anomalies" value={metrics?.knownAnomalies ?? '--'} icon={AlertTriangle} colorClass="text-warning" /></div>
-              <div className="bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Unknown Anomalies" value={metrics?.unknownAnomalies ?? '--'} icon={AlertCircle} colorClass="text-danger" trend="+2 since last run" trendDirection="up" /></div>
-              <div className="bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="New Changes" value={metrics?.newChanges ?? '--'} icon={TrendingUp} colorClass="text-cyan" trend="-1 since last run" trendDirection="down" /></div>
+              <div className="bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Normal Regions" value={metrics?.normalRegions ?? '--'} icon={CheckCircle} colorClass="text-text-primary" /></div>
+              <div className="bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Known Anomalies" value={metrics?.knownAnomalies ?? '--'} icon={AlertTriangle} colorClass="text-warning" /></div>
+              <div className="bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="Unknown Anomalies" value={metrics?.unknownAnomalies ?? '--'} icon={AlertCircle} colorClass="text-danger" trend="+2 since last run" trendDirection="up" /></div>
+              <div className="bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden"><MetricCard label="New Changes" value={metrics?.newChanges ?? '--'} icon={TrendingUp} colorClass="text-cyan" trend="-1 since last run" trendDirection="down" /></div>
             </div>
 
             {/* Minimap Section */}
-            <div className="flex-1 bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border p-1 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] min-h-[300px] md:min-h-[400px] overflow-hidden relative group">
+            <div className="flex-1 bg-glass backdrop-blur-md rounded-2xl border border-glass-border p-1 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)] min-h-[300px] md:min-h-[400px] overflow-hidden relative group">
               <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
                 <h3 className="font-display font-bold text-sm uppercase tracking-[0.12em] text-text-primary px-3 py-1.5 bg-void/80 backdrop-blur-md border border-glass-border rounded-lg shadow-lg pointer-events-none hidden sm:block">Sector Minimap</h3>
                 <button 
@@ -196,7 +196,7 @@ export default function Dashboard() {
                       longitude={selectedAnomaly.longitude}
                       latitude={selectedAnomaly.latitude}
                     >
-                      <div className="w-2.5 h-2.5 rounded-full border border-void shadow-lg transition-all duration-300 bg-accent scale-150 animate-bounce ring-4 ring-accent/30 shadow-[var(--glow-accent)]" />
+                      <div className="w-2.5 h-2.5 rounded-full border border-void shadow-lg transition-all duration-500 bg-accent scale-125 animate-pulse ring-2 ring-accent/20 shadow-[var(--glow-accent)]" />
                     </Marker>
                   )}
                 </Map>
@@ -205,7 +205,7 @@ export default function Dashboard() {
             </div>
 
             {/* Short Survey Activity Chart */}
-            <div className="h-48 shrink-0 bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border p-5 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            <div className="h-48 shrink-0 bg-glass backdrop-blur-md rounded-2xl border border-glass-border p-5 flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-display font-bold text-xs uppercase tracking-[0.12em] text-text-primary">Survey Trends</h3>
                 {isLoading && <div className="w-3 h-3 border-2 border-glass-border border-t-cyan rounded-full animate-spin" />}
@@ -246,7 +246,7 @@ export default function Dashboard() {
           <div className="flex-[1] flex flex-col gap-4 lg:gap-6 shrink-0 w-full xl:min-w-[340px] xl:w-[400px] xl:min-h-0">
             
             {/* Inspector Node */}
-            <div className="bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border p-6 flex flex-col shrink-0 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            <div className="bg-glass backdrop-blur-md rounded-2xl border border-glass-border p-6 flex flex-col shrink-0 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
               <h3 className="font-display font-bold text-sm uppercase tracking-[0.12em] text-text-primary flex items-center gap-2 mb-4">
                 <Zap className="w-4 h-4 text-cyan" /> Inspector Node
               </h3>
@@ -277,7 +277,7 @@ export default function Dashboard() {
             </div>
 
             {/* Priority Queue */}
-            <div className="flex-1 min-h-0 bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col">
               <PriorityQueue
                 anomalies={priorityAnomalies}
                 selectedId={selectedAnomalyId}
@@ -288,7 +288,7 @@ export default function Dashboard() {
             </div>
 
             {/* Learning Pipeline */}
-            <div className="shrink-0 bg-glass backdrop-blur-3xl rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
+            <div className="shrink-0 bg-glass backdrop-blur-md rounded-2xl border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
               <ActiveLearningWidget
                 currentModel={modelFeedback?.currentModel || { name: 'S.A.G.A.R. v1', accuracy: 0, lastUpdated: '' }}
                 feedbackSamples={modelFeedback?.feedbackSamples || 0}

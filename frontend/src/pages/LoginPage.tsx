@@ -18,6 +18,7 @@ export default function LoginPage() {
   
   const [captchaText, setCaptchaText] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSlow, setIsSlow] = useState(false);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState('');
 
@@ -52,14 +53,26 @@ export default function LoginPage() {
     }
 
     setIsVerifying(true);
+    setIsSlow(false);
+    
+    // Show "waking up" message after 5 seconds of waiting
+    const slowTimer = setTimeout(() => setIsSlow(true), 5000);
     
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      
+      // Render free tier cold starts can take 30-60s — use AbortController with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       
       const data = await response.json();
       
@@ -78,9 +91,16 @@ export default function LoginPage() {
         navigate('/dashboard');
       }, 1000);
     } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication.');
+      if (err.name === 'AbortError') {
+        setError('Connection timed out. The server may be starting up — please try again in 30 seconds.');
+      } else {
+        setError(err.message || 'An error occurred during authentication.');
+      }
       setIsVerifying(false);
       setVerified(false);
+    } finally {
+      clearTimeout(slowTimer);
+      setIsSlow(false);
     }
   };
 
@@ -147,7 +167,7 @@ export default function LoginPage() {
             <p className="text-xs text-text-muted tracking-wide font-mono">Verify credentials to initialize dashboard</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-glass backdrop-blur-3xl border border-glass-border p-8 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden">
+          <form onSubmit={handleSubmit} className="bg-glass backdrop-blur-md border border-glass-border p-8 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden">
             
             {/* Loading/Verification overlay */}
             {(isVerifying || verified) && (
@@ -164,6 +184,11 @@ export default function LoginPage() {
                   <>
                     <div className="w-12 h-12 border-2 border-glass-border border-t-accent rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(0,240,255,0.2)]" />
                     <p className="text-text-primary font-mono tracking-widest uppercase text-xs animate-pulse">Verifying Credentials...</p>
+                    {isSlow && (
+                      <p className="text-[10px] text-accent font-mono mt-3 text-center max-w-[200px] animate-in fade-in duration-500">
+                        Server is waking up — this may take up to 30s on first visit
+                      </p>
+                    )}
                   </>
                 )}
               </div>
