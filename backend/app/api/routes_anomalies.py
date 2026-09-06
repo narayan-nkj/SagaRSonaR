@@ -35,3 +35,12 @@ def update_anomaly_status(anomaly_id: str, data: AnomalyUpdate, db: Session = De
     
     anomaly.status = data.status
     return repo.update(anomaly)
+
+from fastapi import UploadFile, File
+from app.services.optical_service import OpticalAnalysisService
+
+@router.post("/{anomaly_id}/optical", response_model=AnomalyResponse)
+def analyze_optical(anomaly_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    service = OpticalAnalysisService(db)
+    # This will either return the updated anomaly or raise a 503 if no model is configured
+    return service.analyze(anomaly_id, file)

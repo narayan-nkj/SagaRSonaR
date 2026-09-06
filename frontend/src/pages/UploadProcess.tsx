@@ -20,6 +20,7 @@ export default function UploadProcess() {
     surveyName: '', vessel: '', area: '', surveyDate: '', depthRange: '', baselineRef: ''
   });
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  const [pipelineResult, setPipelineResult] = useState<any>(null);
 
   const hasFiles = selectedFiles.length > 0;
 
@@ -46,15 +47,29 @@ export default function UploadProcess() {
          logIndex++;
       }
       
-      if (p >= 100) {
-        p = 100;
-        setTerminalLogs(prev => [...prev, `> Pipeline execution finished. Ready for review.`]);
-        setAppState('complete');
-        clearInterval(interval);
+      if (p >= 95) {
+        p = 95;
       }
       setProgress(p);
     }, 200);
-    startSurveyProcessing('surv_003');
+
+    const runPipeline = async () => {
+      try {
+        const imgFile = selectedFiles.find(f => f.name.match(/\.(png|jpg|jpeg)$/i));
+        const res = await startSurveyProcessing(imgFile);
+        if (res && res.anomalies && res.anomalies.length > 0) {
+            setPipelineResult(res.anomalies[0]);
+        }
+        clearInterval(interval);
+        setProgress(100);
+        setTerminalLogs(prev => [...prev, `> Pipeline execution finished. Ready for review.`]);
+        setAppState('complete');
+      } catch (err) {
+        clearInterval(interval);
+        setTerminalLogs(prev => [...prev, `> Pipeline execution failed: ${err}`]);
+      }
+    };
+    runPipeline();
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appState]);
@@ -149,7 +164,8 @@ export default function UploadProcess() {
                   {hasFiles ? <CheckCircle2 className="w-7 h-7" /> : <UploadCloud className="w-7 h-7" />}
                 </div>
                 <h3 className="text-text-primary text-[12px] font-mono uppercase tracking-widest mb-2">{hasFiles ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} queued` : 'Select survey files'}</h3>
-                <p className="text-[10px] text-text-secondary font-mono uppercase tracking-widest max-w-sm mb-6">Supported formats: .sl2, .xtf, .json</p>
+                <p className="text-[10px] text-text-secondary font-mono uppercase tracking-widest max-w-sm mb-2">Supported formats: .sl2, .xtf, .json, .png, .jpg</p>
+                <p className="text-[9px] text-accent/80 font-mono uppercase tracking-widest max-w-sm mb-6">Multi-modal input supported: Primary SSS + Optional Optical + Metadata</p>
                 <div className={`text-[10px] font-bold uppercase tracking-widest px-6 py-2.5 rounded-xl transition-all duration-300 border ${hasFiles ? 'bg-glass-strong border-glass-border-strong text-text-primary' : 'bg-glass border-glass-border text-text-secondary group-hover:border-accent/50 group-hover:text-accent group-hover:bg-accent/10'}`}>
                   {hasFiles ? 'Add More' : 'Browse Files'}
                 </div>
@@ -291,8 +307,32 @@ export default function UploadProcess() {
                    <CheckCircle2 className="w-6 h-6" />
                    <span className="text-[12px] font-bold uppercase tracking-[0.2em]">Execution Completed</span>
                 </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mt-4 mb-4">
+                   <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Seabed Nature</span>
+                      <span className="text-[13px] font-bold text-text-primary uppercase">{pipelineResult?.seabed_nature || 'Unknown'}</span>
+                   </div>
+                   <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Classification</span>
+                      <span className="text-[13px] font-bold text-accent uppercase">{pipelineResult?.type || 'None'}</span>
+                   </div>
+                   <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Risk Level</span>
+                      <span className={`text-[13px] font-bold uppercase ${pipelineResult?.risk_level === 'CRITICAL' || pipelineResult?.risk_level === 'HIGH' ? 'text-danger' : 'text-warning'}`}>{pipelineResult?.risk_level || 'LOW'}</span>
+                   </div>
+                   <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Geolocation</span>
+                      <span className="text-[10px] font-mono text-text-primary leading-tight mt-1">
+                        {pipelineResult?.latitude ? `${pipelineResult.latitude.toFixed(4)}° N` : 'N/A'}<br/>
+                        {pipelineResult?.longitude ? `${pipelineResult.longitude.toFixed(4)}° E` : 'N/A'}<br/>
+                        Depth: {pipelineResult?.depth ? `${pipelineResult.depth.toFixed(1)}m` : 'N/A'}
+                      </span>
+                   </div>
+                </div>
+
                 <p className="text-[11px] text-text-secondary font-mono text-center uppercase tracking-widest max-w-sm">
-                  Model has identified <span className="text-danger font-bold">7</span> unknown anomalies requiring verification.
+                  Model has identified <span className="text-danger font-bold">{pipelineResult ? '1' : '0'}</span> high-risk anomaly requiring verification.
                 </p>
                 <button
                   onClick={() => navigate('/map')}

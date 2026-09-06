@@ -1,6 +1,12 @@
 # SagaRSonaR
 
-SagaRSonaR is a full-stack application featuring a React-based frontend and a robust FastAPI-based backend. It's designed to provide a comprehensive pipeline with ML inference capabilities, data processing, and an interactive UI.
+SagaRSonaR (SonarVision) is a full-stack application featuring a React-based frontend and a robust FastAPI-based backend. It's designed to provide a comprehensive pipeline with ML inference capabilities, data processing, and an interactive UI for analyzing seabed sonar scans.
+
+## Features
+- **Interactive Anomaly Detection**: Map-based visualization of sonar anomalies.
+- **Optical Image Verification**: Seamless workflow for uploading and analyzing optical imagery to verify sonar targets, supporting side-by-side evidence comparison.
+- **Glassmorphic UI**: Beautiful, dark-themed frosted glass aesthetic with buttery-smooth map transitions.
+- **Real-time Scoring**: Combined confidence scores using both sonar parameters (Spatial Deviation, Temporal Change) and optical evidence.
 
 ## Project Structure
 
@@ -82,9 +88,8 @@ The frontend provides an interactive user interface using React, MapLibre, and R
 
 ## Docker (Optional)
 
-If you prefer using Docker for the backend, you can start it using Docker Compose:
+If you prefer using Docker to run the entire application (both frontend and backend), you can start it using Docker Compose from the root directory:
 ```bash
-cd backend
 docker-compose up --build
 ```
 

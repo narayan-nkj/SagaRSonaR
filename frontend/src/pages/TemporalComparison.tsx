@@ -251,9 +251,11 @@ export default function TemporalComparison() {
  <h4 className="text-[9px] font-bold text-text-secondary uppercase tracking-[0.2em] mb-4">Evidence Summary</h4>
  <ul className="space-y-3">
  {[
+ { label: 'Seabed Nature', value: anomaly?.seabedNature || 'Unknown', color: 'text-text-primary font-mono capitalize' },
+ { label: 'Risk Level', value: anomaly?.riskLevel || anomaly?.severity || 'Medium', color: anomaly?.severity === 'high' ? 'text-danger font-bold font-mono capitalize' : 'text-warning font-mono capitalize' },
  { label: 'Spatial deviation', value: 'High (88/100)', color: 'text-warning font-mono' },
  { label: 'Temporal change', value: 'Very High (95/100)', color: 'text-danger font-bold font-mono' },
- { label: 'First observed', value: '27 Aug 2026', color: 'text-text-primary font-mono' },
+ { label: 'First observed', value: anomaly?.detectedAt ? new Date(anomaly.detectedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '27 Aug 2026', color: 'text-text-primary font-mono' },
  { label: 'Prior state', value: 'Not present', color: 'text-text-primary font-mono' },
  ].map(row => (
  <li key={row.label} className="flex justify-between items-center text-[11px] uppercase tracking-widest font-bold">

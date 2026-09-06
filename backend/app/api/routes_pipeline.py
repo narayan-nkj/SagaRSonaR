@@ -57,7 +57,7 @@ def process_pipeline(mission_id: str, image_id: str, db: Session = Depends(get_d
     
     for det in accepted_detections:
         # Risk
-        risk_res = risk_service.calculate_risk(det)
+        risk_res = risk_service.calculate_risk(det, det.seabed_nature or "unknown")
         det.risk_score = risk_res["risk_score"]
         det.risk_level = risk_res["risk_level"]
         
@@ -78,7 +78,8 @@ def process_pipeline(mission_id: str, image_id: str, db: Session = Depends(get_d
             risk_level=det.risk_level,
             latitude=det.latitude,
             longitude=det.longitude,
-            depth=det.depth
+            depth=det.depth,
+            seabed_nature=det.seabed_nature
         )
         new_anomalies.append(anomaly)
     

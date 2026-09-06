@@ -27,6 +27,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+import os
+
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+
 @app.on_event("startup")
 async def startup_event():
     logger.info(f"Starting SONAR-X Backend (Env: {settings.APP_ENV})")

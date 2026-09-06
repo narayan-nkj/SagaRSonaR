@@ -35,9 +35,7 @@ export const useUser = () => useContext(UserContext);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('isAuthenticated') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     setProfile(prev => {
@@ -52,12 +50,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return next;
     });
     setIsAuthenticated(true);
-    sessionStorage.setItem('isAuthenticated', 'true');
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    sessionStorage.removeItem('isAuthenticated');
   };
 
   return (

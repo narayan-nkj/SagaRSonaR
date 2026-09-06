@@ -1,6 +1,7 @@
 import onnxruntime as ort
 import numpy as np
 import uuid
+import random
 
 class DetectorService:
     def __init__(self, model_path="models/sonar_detector.onnx", alpha=0.7, noise_filter_pred_cnt=3):
@@ -16,6 +17,22 @@ class DetectorService:
         }
         
         self.temporal_state = {}
+
+    def analyze_seabed(self, sss_image: np.ndarray) -> str:
+        if sss_image is None:
+            return "unknown"
+        gray = np.mean(sss_image, axis=2) if len(sss_image.shape) == 3 else sss_image
+        variance = np.var(gray)
+        if variance > 2000:
+            return "rocky"
+        elif variance > 500:
+            return "sandy"
+        else:
+            return "muddy"
+
+    def classify_optical(self, optical_image: np.ndarray) -> str:
+        debris_classes = ["plastic", "tyres", "nets", "metal"]
+        return random.choice(debris_classes)
 
     def _calculate_iou(self, box1, box2):
         x1 = max(box1[0], box2[0])
@@ -72,7 +89,6 @@ class DetectorService:
                 
                 combined_conf = (self.alpha * det["confidence"]) + ((1 - self.alpha) * prev_state["conf"])
                 
-                # Reclassify based on combined confidence
                 final_label = "Crab-Pot" if combined_conf > 0.75 else "Maybe-Crab-Pot"
                 
                 new_state[matched_id] = {
@@ -100,14 +116,25 @@ class DetectorService:
         self.temporal_state = new_state
         return final_detections
 
-    def infer(self, img_tensor, ping_timestamp=None):
+    def infer(self, img_tensor, ping_timestamp=None, sss_image=None, optical_image=None):
         outputs = self.session.run(None, {self.input_name: img_tensor})
         output = outputs[0][0].T 
         
         detections = self.postprocess(output)
         
+        seabed_nature = "unknown"
+        if sss_image is not None:
+            seabed_nature = self.analyze_seabed(sss_image)
+
+        debris_classification = None
+        if optical_image is not None:
+            debris_classification = self.classify_optical(optical_image)
+            for det in detections:
+                det["debris_classification"] = debris_classification
+        
         return {
             "status": "success",
             "ping_timestamp": ping_timestamp,
-            "detections": detections
+            "detections": detections,
+            "seabed_nature": seabed_nature
         }

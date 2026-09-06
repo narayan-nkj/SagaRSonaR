@@ -25,6 +25,16 @@ export interface Anomaly {
   latitude: number;
   longitude: number;
   depthMeters: number;
+  seabedNature?: string;
+  riskLevel?: string;
+  
+  // Optical additions
+  opticalImagePath?: string;
+  opticalClassification?: string;
+  opticalConfidence?: number;
+  finalClassification?: string;
+  finalConfidence?: number;
+
   detectedAt: string;
   firstObserved: string;
   explanation: string;

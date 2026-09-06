@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getAnomalies, submitReview, getReportSummary, getModelFeedback } from '../services/api';
 import { Anomaly, ReportSummary, ModelFeedback, HARBOURS } from '../data/mockData';
 import { Map, Marker } from '../components/RawMap';
@@ -21,14 +21,16 @@ import {
 } from 'lucide-react';
 import { useHarbour } from '../contexts/AppContext';
 import { usePreferences } from '../contexts/PreferencesContext';
+import OpticalUploader from '../components/OpticalUploader';
 
 type Tab = 'review' | 'report';
 
 const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-2xl';
 
-export default function ReviewReport() {
- const navigate = useNavigate();
- const { activeHarbour } = useHarbour();
+ export default function ReviewReport() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { activeHarbour } = useHarbour();
  const { formatCoordinates } = usePreferences();
  const [activeTab, setActiveTab] = useState<Tab>('review');
  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -52,7 +54,11 @@ export default function ReviewReport() {
  const data = await getAnomalies({ page: pageNum, limit: 10 }, activeHarbour);
  if (isInitial) {
  setAnomalies(data);
- if (data.length > 0) setSelectedId(data.find(a => a.reviewStatus === 'pending')?.id || data[0].id);
+ if (location.state?.selectedAnomalyId) {
+    setSelectedId(location.state.selectedAnomalyId);
+  } else if (data.length > 0) {
+    setSelectedId(data.find(a => a.reviewStatus === 'pending')?.id || data[0].id);
+  }
  } else {
  setAnomalies(prev => [...prev, ...data]);
  }
@@ -259,60 +265,131 @@ export default function ReviewReport() {
  </div>
  </div>
  
- {/* Sonar Image Crop */}
- <div className="w-full h-72 bg-surface border border-border relative overflow-hidden flex items-center justify-center">
- <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #45A796 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
- 
- {/* Dynamic Sonar Shape Rendering */}
- {(() => {
- const isCable = selectedAnomaly.label.toLowerCase().includes('cable') || selectedAnomaly.explanation.toLowerCase().includes('cable');
- const isUnknown = selectedAnomaly.classification === 'unknown';
- 
- if (isCable) {
- return (
- <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full opacity-80 drop-shadow-[0_0_8px_rgba(224,87,99,0.8)]">
- <path d="M0,80 Q40,60 60,30 T100,10" fill="none" stroke="var(--color-danger)" strokeWidth="1.5" strokeDasharray="4,2" className="animate-pulse"/>
- <path d="M0,82 Q40,62 60,32 T100,12" fill="none" stroke="var(--color-danger)" strokeWidth="0.5" opacity="0.6"/>
- <rect x="55" y="25" width="10" height="10" fill="var(--color-danger)" fillOpacity="0.2" stroke="var(--color-danger)" strokeWidth="0.5" className="animate-ping" style={{transformOrigin: '60px 30px'}}/>
- </svg>
- );
- } else if (isUnknown) {
- const getSeededRandom = (seed: string) => {
- let h = 0;
- for (let i = 0; i < seed.length; i++) h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
- return () => {
- h = Math.imul(1525540023, h) + 1 | 0;
- return (h >>> 0) / 4294967296;
- };
- };
- const rand = getSeededRandom(selectedAnomaly.id);
- const numPoints = 5 + Math.floor(rand() * 4);
- const points = Array.from({ length: numPoints }).map((_, i) => {
- const angle = (i / numPoints) * Math.PI * 2;
- const radius = 20 + rand() * 30; // Radius between 20 and 50
- const x = 50 + Math.cos(angle) * radius;
- const y = 50 + Math.sin(angle) * radius;
- return `${x.toFixed(1)},${y.toFixed(1)}`;
- }).join(' ');
+  {/* Evidence Images */}
+  <div className={`grid grid-cols-1 ${selectedAnomaly.opticalImagePath ? 'md:grid-cols-2' : ''} gap-4`}>
+    <div className="flex flex-col gap-2">
+      <div className="text-[10px] text-text-secondary font-mono uppercase tracking-widest font-bold">Sonar Evidence</div>
+      <div className="w-full h-72 bg-surface border border-border relative overflow-hidden flex items-center justify-center">
+        <div className="absolute inset-0 opacity-40 mix-blend-screen" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #45A796 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+        
+        {/* Dynamic Sonar Shape Rendering */}
+        {(() => {
+        const isCable = selectedAnomaly.label.toLowerCase().includes('cable') || selectedAnomaly.explanation.toLowerCase().includes('cable');
+        const isUnknown = selectedAnomaly.classification === 'unknown';
+        
+        if (isCable) {
+        return (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full opacity-80 drop-shadow-[0_0_8px_rgba(224,87,99,0.8)]">
+        <path d="M0,80 Q40,60 60,30 T100,10" fill="none" stroke="var(--color-danger)" strokeWidth="1.5" strokeDasharray="4,2" className="animate-pulse"/>
+        <path d="M0,82 Q40,62 60,32 T100,12" fill="none" stroke="var(--color-danger)" strokeWidth="0.5" opacity="0.6"/>
+        <rect x="55" y="25" width="10" height="10" fill="var(--color-danger)" fillOpacity="0.2" stroke="var(--color-danger)" strokeWidth="0.5" className="animate-ping" style={{transformOrigin: '60px 30px'}}/>
+        </svg>
+        );
+        } else if (isUnknown) {
+        const getSeededRandom = (seed: string) => {
+        let h = 0;
+        for (let i = 0; i < seed.length; i++) h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+        return () => {
+        h = Math.imul(1525540023, h) + 1 | 0;
+        return (h >>> 0) / 4294967296;
+        };
+        };
+        const rand = getSeededRandom(selectedAnomaly.id);
+        const numPoints = 5 + Math.floor(rand() * 4);
+        const points = Array.from({ length: numPoints }).map((_, i) => {
+        const angle = (i / numPoints) * Math.PI * 2;
+        const radius = 20 + rand() * 30; // Radius between 20 and 50
+        const x = 50 + Math.cos(angle) * radius;
+        const y = 50 + Math.sin(angle) * radius;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
 
- return (
- <svg viewBox="0 0 100 100" className="absolute inset-1/4 w-1/2 h-1/2 opacity-80 drop-shadow-[0_0_12px_rgba(229,184,105,0.8)]">
- <polygon points={points} fill="var(--color-warning)" fillOpacity="0.15" stroke="var(--color-warning)" strokeWidth="1" strokeDasharray="3,3" className="animate-pulse" />
- <circle cx="50" cy="50" r={30 + rand() * 15} fill="none" stroke="var(--color-warning)" strokeWidth="0.5" opacity="0.3" strokeDasharray="2,4" />
- </svg>
- );
- } else {
- return (
- <div className="absolute inset-[30%] border border-cyan rounded-md opacity-60 bg-cyan/10 shadow-[0_0_20px_rgba(69,167,150,0.4)] flex items-center justify-center">
- <div className="w-1/2 h-1/2 bg-cyan/50 rounded-md animate-ping"></div>
- </div>
- );
- }
- })()}
+        return (
+        <svg viewBox="0 0 100 100" className="absolute inset-1/4 w-1/2 h-1/2 opacity-80 drop-shadow-[0_0_12px_rgba(229,184,105,0.8)]">
+        <polygon points={points} fill="var(--color-warning)" fillOpacity="0.15" stroke="var(--color-warning)" strokeWidth="1" strokeDasharray="3,3" className="animate-pulse" />
+        <circle cx="50" cy="50" r={30 + rand() * 15} fill="none" stroke="var(--color-warning)" strokeWidth="0.5" opacity="0.3" strokeDasharray="2,4" />
+        </svg>
+        );
+        } else {
+        return (
+        <div className="absolute inset-[30%] border border-cyan rounded-md opacity-60 bg-cyan/10 shadow-[0_0_20px_rgba(69,167,150,0.4)] flex items-center justify-center">
+        <div className="w-1/2 h-1/2 bg-cyan/50 rounded-md animate-ping"></div>
+        </div>
+        );
+        }
+        })()}
 
- <span className="absolute bottom-3 left-3 text-[9px] font-mono text-cyan bg-void px-2 py-1 border border-cyan/30 uppercase tracking-widest">Sonar Crop — 450kHz</span>
- </div>
+        <span className="absolute bottom-3 left-3 text-[9px] font-mono text-cyan bg-void px-2 py-1 border border-cyan/30 uppercase tracking-widest">Sonar Crop — 450kHz</span>
+      </div>
+    </div>
+    
+    {selectedAnomaly.opticalImagePath && (
+      <div className="flex flex-col gap-2">
+        <div className="text-[10px] text-text-secondary font-mono uppercase tracking-widest font-bold flex justify-between">
+          <span>Optical Evidence</span>
+          <span className="text-cyan">CONF: {(selectedAnomaly.opticalConfidence! * 100).toFixed(1)}%</span>
+        </div>
+        <div className="w-full h-72 bg-void border border-border relative overflow-hidden flex items-center justify-center">
+          <img 
+            src={`http://localhost:8000/api/uploads/${selectedAnomaly.opticalImagePath.split('/').pop()}`} 
+            alt="Optical Evidence" 
+            className="w-full h-full object-cover opacity-90"
+          />
+          <div className="absolute inset-0 ring-1 ring-inset ring-border pointer-events-none"></div>
+          <span className="absolute bottom-3 left-3 text-[9px] font-mono text-cyan bg-void/80 backdrop-blur-sm px-2 py-1 border border-cyan/30 uppercase tracking-widest">Optical Cam</span>
+        </div>
+      </div>
+    )}
+  </div>
+  
+  {!selectedAnomaly.opticalImagePath && (
+    <OpticalUploader 
+      anomalyId={selectedAnomaly.id} 
+      onAnalysisComplete={(updatedAnomaly) => {
+        setAnomalies(prev => prev.map(a => a.id === updatedAnomaly.id ? updatedAnomaly : a));
+      }} 
+    />
+  )}
+
+  {selectedAnomaly.finalClassification && (
+    <div className="bg-surface border border-cyan/30 p-5 mt-2 shadow-[0_0_20px_rgba(0,229,255,0.05)]">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse shadow-[var(--glow-accent)]"></div>
+        <div className="text-[10px] font-bold text-cyan uppercase tracking-[0.2em]">Final Target Identification</div>
+      </div>
+      <div className="flex items-end justify-between">
+        <div>
+          <div className="text-2xl font-display font-light text-text-primary capitalize mb-1">{selectedAnomaly.finalClassification.replace(/_/g, ' ')}</div>
+          <div className="text-[11px] font-mono text-text-secondary">Combined Sonar & Optical Analysis</div>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-mono font-bold text-cyan">{(selectedAnomaly.finalConfidence! * 100).toFixed(1)}%</div>
+          <div className="text-[10px] font-mono text-text-secondary tracking-widest uppercase">Confidence</div>
+        </div>
+      </div>
+    </div>
+  )}
  
+ {/* Context Info */}
+ <div className="bg-surface border border-border p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div>
+ <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Seabed Nature</div>
+ <div className="text-text-primary font-mono text-[11px] capitalize">{selectedAnomaly.seabedNature || 'Unknown'}</div>
+ </div>
+ <div>
+ <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Risk Level</div>
+ <div className="text-text-primary font-mono text-[11px] capitalize">{selectedAnomaly.riskLevel || selectedAnomaly.severity}</div>
+ </div>
+ <div>
+ <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Depth</div>
+ <div className="text-text-primary font-mono text-[11px]">{selectedAnomaly.depthMeters} m</div>
+ </div>
+ <div>
+ <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Geolocation</div>
+ <div className="text-text-primary font-mono text-[11px]">{formatCoordinates(selectedAnomaly.latitude, selectedAnomaly.longitude)}</div>
+ </div>
+ </div>
+
  {/* Explanation */}
  <div className="bg-surface border border-border p-5 flex flex-col gap-3">
  <div className="flex items-center gap-2">

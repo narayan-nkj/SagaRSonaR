@@ -27,6 +27,27 @@ class DetectionService:
         det_results = provider.detect(target_path)
         processing_time_ms = int((time.time() - start_time) * 1000)
 
+        # Analyze Seabed
+        seabed_nature = "unknown"
+        try:
+            import cv2
+            import numpy as np
+            img = cv2.imread(target_path)
+            if img is not None:
+                gray = np.mean(img, axis=2) if len(img.shape) == 3 else img
+                variance = np.var(gray)
+                if variance > 2000:
+                    seabed_nature = "rocky"
+                elif variance > 500:
+                    seabed_nature = "sandy"
+                else:
+                    seabed_nature = "muddy"
+        except Exception as e:
+            print(f"Error analyzing seabed: {e}")
+
+        for r in det_results:
+            r.seabed_nature = seabed_nature
+
         # Save detections to db
         db_detections = []
         for r in det_results:
@@ -40,7 +61,8 @@ class DetectionService:
                 bbox_x2=r.bbox.x2,
                 bbox_y2=r.bbox.y2,
                 mask=r.mask,
-                area=r.area
+                area=r.area,
+                seabed_nature=seabed_nature
             ))
             
         if db_detections:

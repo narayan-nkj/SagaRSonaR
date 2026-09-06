@@ -64,6 +64,7 @@ class Detection(Base):
     area = Column(Float, nullable=True)
     risk_score = Column(Float, nullable=True)
     risk_level = Column(String, nullable=True)
+    seabed_nature = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     depth = Column(Float, nullable=True)
@@ -85,6 +86,7 @@ class Anomaly(Base):
     confidence = Column(Float)
     risk_score = Column(Float)
     risk_level = Column(String)
+    seabed_nature = Column(String, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     depth = Column(Float, nullable=True)
@@ -92,6 +94,12 @@ class Anomaly(Base):
     explanation = Column(String, nullable=True)
     notes = Column(String, nullable=True)
     created_at = Column(DateTime, default=get_utc_now)
+
+    optical_image_path = Column(String, nullable=True)
+    optical_classification = Column(String, nullable=True)
+    optical_confidence = Column(Float, nullable=True)
+    final_classification = Column(String, nullable=True)
+    final_confidence = Column(Float, nullable=True)
 
     mission = relationship("Mission", back_populates="anomalies")
     detection = relationship("Detection", back_populates="anomaly")

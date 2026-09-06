@@ -8,6 +8,10 @@ import random
 from app.ml.model_manager import model_manager
 from app.database.database import get_db
 from app.database.models import Mission, SonarImage, Detection, Anomaly
+from app.services.detection_service import DetectionService
+from app.services.risk_service import RiskService
+from app.services.geolocation_service import GeolocationService
+from app.database.repositories import DetectionRepository
 
 router = APIRouter()
 
@@ -25,9 +29,6 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         shutil.copyfileobj(file.file, buffer)
 
     try:
-        # Run YOLO detection
-        detections = model_manager.detect(file_path)
-        
         # Get baseline mission for saving (fallback to first mission)
         mission = db.query(Mission).first()
         if not mission:
@@ -43,60 +44,62 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         db.commit()
         db.refresh(sonar_img)
 
-        # Base offsets for realistic mapping around the mission
-        saved_detections = []
-        for d in detections:
-            # Generate risk heuristics based on YOLO confidence
-            risk_score = min(1.0, d.confidence * 1.1)
-            risk_level = "CRITICAL" if risk_score > 0.8 else "HIGH" if risk_score > 0.6 else "MEDIUM"
-            
-            lat = (mission.latitude or 0.0) + (random.random() - 0.5) * 0.02
-            lng = (mission.longitude or 0.0) + (random.random() - 0.5) * 0.02
+        # Detect
+        det_service = DetectionService(db)
+        det_service.run_detection(sonar_img.id)
 
-            det_record = Detection(
-                mission_id=mission.id,
-                sonar_image_id=sonar_img.id,
-                class_name=d.class_name,
-                confidence=d.confidence,
-                bbox_x1=d.bbox[0],
-                bbox_y1=d.bbox[1],
-                bbox_x2=d.bbox[2],
-                bbox_y2=d.bbox[3],
-                risk_score=risk_score,
-                risk_level=risk_level,
-                latitude=lat,
-                longitude=lng,
-                depth=(mission.depth or 0.0) + random.uniform(-5, 5),
-                status="NEW"
-            )
-            db.add(det_record)
-            db.commit()
-            db.refresh(det_record)
-            
-            # Auto-flag as anomaly
+        # Get detections
+        det_repo = DetectionRepository(db)
+        img_detections = [d for d in det_repo.get_by_mission(mission.id) if d.sonar_image_id == sonar_img.id]
+
+        risk_service = RiskService()
+        geo_service = GeolocationService()
+
+        saved_anomalies = []
+        for det in img_detections:
+            risk_res = risk_service.calculate_risk(det, det.seabed_nature or "unknown")
+            det.risk_score = risk_res["risk_score"]
+            det.risk_level = risk_res["risk_level"]
+
+            geo_res = geo_service.locate_detection(mission, det, 1000)
+            det.latitude = geo_res["latitude"]
+            det.longitude = geo_res["longitude"]
+            det.depth = geo_res["depth"]
+
             anomaly = Anomaly(
                 mission_id=mission.id,
-                detection_id=det_record.id,
+                detection_id=det.id,
                 anomaly_id=f"ANO-UPL-{str(uuid.uuid4())[:6].upper()}",
-                type=det_record.class_name,
-                confidence=det_record.confidence,
-                risk_score=det_record.risk_score,
-                risk_level=det_record.risk_level,
-                latitude=det_record.latitude,
-                longitude=det_record.longitude,
-                depth=det_record.depth,
+                type=det.class_name,
+                confidence=det.confidence,
+                risk_score=det.risk_score,
+                risk_level=det.risk_level,
+                seabed_nature=det.seabed_nature,
+                latitude=det.latitude,
+                longitude=det.longitude,
+                depth=det.depth,
                 status="NEW"
             )
             db.add(anomaly)
-            saved_detections.append(d.model_dump())
-        
+            saved_anomalies.append({
+                "id": anomaly.anomaly_id,
+                "type": anomaly.type,
+                "confidence": anomaly.confidence,
+                "risk_score": anomaly.risk_score,
+                "risk_level": anomaly.risk_level,
+                "seabed_nature": anomaly.seabed_nature,
+                "latitude": anomaly.latitude,
+                "longitude": anomaly.longitude,
+                "depth": anomaly.depth
+            })
+
         db.commit()
 
         return {
             "status": "success",
             "filename": file.filename,
             "path": file_path,
-            "detections": saved_detections
+            "anomalies": saved_anomalies
         }
     except Exception as e:
         db.rollback()

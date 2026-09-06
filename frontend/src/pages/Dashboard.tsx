@@ -45,15 +45,14 @@ export default function Dashboard() {
   // Map flyTo logic
   useEffect(() => {
     if (mapRef.current) {
-      if (selectedAnomalyLat && selectedAnomalyLng) {
-        mapRef.current.flyTo({
-          center: [selectedAnomalyLng, selectedAnomalyLat],
-          zoom: 11,
-          pitch: 0,
-          bearing: 0,
-          speed: 1.5,
-          curve: 1
-        });
+      if (selectedAnomalyLat && selectedAnomalyLng && harborLat && harborLng) {
+        mapRef.current.fitBounds(
+          [
+            [Math.min(harborLng, selectedAnomalyLng), Math.min(harborLat, selectedAnomalyLat)],
+            [Math.max(harborLng, selectedAnomalyLng), Math.max(harborLat, selectedAnomalyLat)]
+          ],
+          { padding: 100, duration: 3500, maxZoom: 13, essential: true }
+        );
       } else {
         const midLng = (harborConfig.lng + harborConfig.waterCenter.lng) / 2;
         const midLat = (harborConfig.lat + harborConfig.waterCenter.lat) / 2;
@@ -67,7 +66,7 @@ export default function Dashboard() {
         });
       }
     }
-  }, [selectedAnomalyLat, selectedAnomalyLng, harborLat, harborLng]);
+  }, [selectedAnomalyLat, selectedAnomalyLng, harborLat, harborLng, harborConfig]);
 
   const isFirstLoad = useRef(true);
   const patrolIndicesRef = useRef<Record<string, number>>({});
@@ -121,7 +120,7 @@ export default function Dashboard() {
       }
       
       setActiveHarbour(nextHarbour);
-    }, 5000); // 5s wait (2.5s animation + 2.5s stay)
+    }, 8000); // 8s wait (3.5s animation + 4.5s stay)
 
     return () => clearInterval(interval);
   }, [isAutoPatrol, activeHarbour, setActiveHarbour]);

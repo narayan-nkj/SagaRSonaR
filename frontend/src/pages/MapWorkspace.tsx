@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Map, Source, Layer, Marker } from '../components/RawMap';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Layers, Activity, Clock, Navigation, Zap, AlertTriangle, ArrowRight, ExternalLink, X, History, List, Plus, Minus, Compass } from 'lucide-react';
+import { Layers, Activity, Clock, Navigation, Zap, AlertTriangle, ArrowRight, ExternalLink, X, History, List, Plus, Minus, Compass, Upload } from 'lucide-react';
 
 import { getAnomalies } from '../services/api';
 import { Anomaly, HARBOURS } from '../data/mockData';
@@ -41,14 +41,15 @@ export default function MapWorkspace() {
       if (location.state?.selectedAnomalyId) {
         const id = location.state.selectedAnomalyId;
         setSelectedAnomalyId(id);
+        setShowAnomalyList(true);
         const anomaly = data.find(a => a.id === id);
         if (anomaly && mapRef.current) {
           setTimeout(() => {
             mapRef.current.flyTo({ 
               center: [anomaly.longitude, anomaly.latitude], 
               zoom: 11, 
-              speed: 1.5,
-              curve: 1,
+              speed: 1.0,
+              curve: 1.42,
               essential: true
             });
           }, 500);
@@ -133,8 +134,8 @@ export default function MapWorkspace() {
     mapRef.current?.flyTo({
       center: [midLng, midLat],
       zoom: 11,
-      speed: 1.5,
-      curve: 1,
+      speed: 1.0,
+      curve: 1.42,
       essential: true
     });
   }, [activeHarbour, harborConfig]);
@@ -150,6 +151,7 @@ export default function MapWorkspace() {
       <div className={`${paneClass} flex-1 relative overflow-hidden flex flex-col min-h-0`}>
           <Map
             ref={mapRef}
+            cursor="default"
             initialViewState={{
               longitude: (harborConfig.lat === 18.9387 ? harborConfig.lng + harborConfig.waterCenter.lng : harborConfig.lng + harborConfig.waterCenter.lng) / 2, // hack to get midLng inline
               latitude: (harborConfig.lat + harborConfig.waterCenter.lat) / 2,
@@ -163,7 +165,7 @@ export default function MapWorkspace() {
             <Marker key={name} longitude={coords.lng} latitude={coords.lat}>
                       <div
                         ref={el => { if (el) harbourMarkersRef.current[name] = el; }}
-                        className={`flex flex-col items-center group cursor-pointer relative transition-opacity duration-300 ${zoomState === 1 ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+                        className={`flex flex-col items-center group cursor-pointer relative transition-opacity duration-300 opacity-100 pointer-events-auto`}
                         onClick={e => { 
                           e.stopPropagation(); 
                           setActiveHarbour(name);
@@ -176,7 +178,7 @@ export default function MapWorkspace() {
                   </div>
                 )}
                 <div className={`w-3 h-3 border border-void shadow-[var(--glow-accent)] group-hover:scale-125 transition-transform z-10 relative ${name === activeHarbour ? 'bg-accent' : 'bg-text-secondary'}`} />
-                <div className={`mt-1 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-border text-[9px] text-text-primary uppercase tracking-[0.2em] font-light whitespace-nowrap shadow-[var(--glow-hover)] transition-opacity duration-300 ${zoomState === 0 && name !== activeHarbour ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+                <div className={`mt-1 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-border text-[9px] text-text-primary uppercase tracking-[0.2em] font-light whitespace-nowrap shadow-[var(--glow-hover)] transition-opacity duration-300 opacity-100`}>
                   {name}
                 </div>
               </div>
@@ -202,13 +204,18 @@ export default function MapWorkspace() {
                         <div
                           ref={el => { if (el) anomalyMarkersRef.current[anomaly.id] = el; }}
                           className={`relative group cursor-pointer flex flex-col items-center justify-center translate-y-6 transition-opacity duration-300 ${zoomState === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
-                          onClick={e => { e.stopPropagation(); setSelectedAnomalyId(anomaly.id); mapRef.current?.flyTo({ 
-                    center: [anomaly.longitude, anomaly.latitude], 
-                    zoom: 11, 
-                    speed: 1.5,
-                    curve: 1,
-                    essential: true 
-                  }); }}
+                          onClick={e => { 
+                            e.stopPropagation(); 
+                            setSelectedAnomalyId(anomaly.id); 
+                            setShowAnomalyList(true);
+                            mapRef.current?.flyTo({ 
+                              center: [anomaly.longitude, anomaly.latitude], 
+                              zoom: 11, 
+                              speed: 1.0,
+                              curve: 1.42,
+                              essential: true 
+                            }); 
+                          }}
                         >
                   <div className="relative mb-2 flex items-center justify-center w-5 h-5">
                     {(selected || anomaly.severity === 'high') && (
@@ -303,12 +310,12 @@ export default function MapWorkspace() {
 
       {/* ══════ RIGHT COLUMN (LIST / DETAILS) ══════ */}
       {showAnomalyList && (
-        <div className="w-full lg:w-[420px] lg:p-6 lg:pl-0 flex flex-col h-[50%] lg:h-full shrink-0 relative z-20 pointer-events-none animate-in slide-in-from-bottom lg:slide-in-from-right fade-in duration-300">
-          <div className="flex-1 bg-void/50 backdrop-blur-3xl border border-glass-border lg:rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden pointer-events-auto">
+        <div className="w-full lg:w-[420px] lg:p-6 lg:pl-0 flex flex-col lg:max-h-full shrink-0 relative z-20 pointer-events-none animate-in slide-in-from-bottom lg:slide-in-from-right fade-in duration-300">
+          <div className="bg-void/80 backdrop-blur-3xl border border-glass-border lg:rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden pointer-events-auto h-auto max-h-full">
             {selectedAnomaly ? (
-            <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex flex-col h-auto max-h-full overflow-hidden">
               {/* Header */}
-              <div className="p-6 border-b border-glass-border flex flex-col gap-4 shrink-0 bg-glass-strong">
+              <div className="p-5 border-b border-glass-border flex flex-col gap-4 shrink-0 bg-transparent">
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-[14px] font-display font-bold uppercase tracking-[0.15em] text-text-primary mb-2">{selectedAnomaly.label}</h2>
@@ -318,7 +325,7 @@ export default function MapWorkspace() {
                     } />
                   </div>
                   <button onClick={() => setSelectedAnomalyId(null)}
-                    className="p-2 bg-glass rounded-full text-text-muted hover:text-text-primary hover:bg-glass-strong transition-colors">
+                    className="p-2 rounded-full text-text-muted hover:text-text-primary hover:bg-glass-strong transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -330,60 +337,112 @@ export default function MapWorkspace() {
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar bg-glass">
+              <div className="overflow-y-auto flex flex-col custom-scrollbar bg-transparent">
+                
+                {/* Optical Evidence Integration */}
+                {!selectedAnomaly.opticalImagePath ? (
+                  <div className="p-5 border-b border-glass-border bg-glass">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <Upload className="w-4 h-4 text-cyan" />
+                        <div className="text-[11px] font-bold text-text-primary uppercase tracking-[0.1em]">Optical Verification</div>
+                      </div>
+                      <div className="text-[10px] font-mono text-text-secondary leading-relaxed">
+                        Do you have an optical image of this target? Upload an optical image to help identify what this detected target actually is.
+                      </div>
+                      <div className="flex gap-2 mt-1">
+                        <button onClick={() => navigate('/review', { state: { selectedAnomalyId: selectedAnomaly.id } })} className="px-4 py-2 bg-cyan/10 hover:bg-cyan/20 border border-cyan/30 text-cyan text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[var(--glow-accent)]">
+                          Upload Optical Image
+                        </button>
+                        <button className="px-4 py-2 bg-glass hover:bg-glass-strong border border-glass-border text-text-secondary hover:text-text-primary text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors">
+                          Continue with Sonar Only
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 border-b border-glass-border bg-glass">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse shadow-[var(--glow-accent)]"></div>
+                      <div className="text-[10px] font-bold text-cyan uppercase tracking-[0.2em]">Final Target Identification</div>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <div className="text-xl font-display font-bold text-text-primary capitalize mb-1">{selectedAnomaly.finalClassification?.replace(/_/g, ' ')}</div>
+                        <div className="text-[10px] font-mono text-text-secondary flex gap-2">
+                          <span className="text-success border border-success/30 px-1 rounded">Sonar</span>
+                          <span className="text-cyan border border-cyan/30 px-1 rounded">Optical</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-mono font-bold text-cyan">{((selectedAnomaly.finalConfidence || 0) * 100).toFixed(1)}%</div>
+                        <div className="text-[9px] font-mono text-text-secondary tracking-widest uppercase">Confidence</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Scores */}
-                <div className="grid grid-cols-2 gap-px bg-glass-strong border-b border-glass-border">
-                  <div className="bg-glass-strong p-5">
+                <div className="grid grid-cols-2 gap-px border-b border-glass-border bg-glass-border">
+                  <div className="bg-void/50 p-5">
                     <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-text-secondary mb-2">Overall Score</div>
                     <div className="text-2xl font-mono font-bold text-text-primary">{selectedAnomaly.overallScore}</div>
-                    <div className="w-full bg-glass-strong h-1.5 mt-3 rounded-full overflow-hidden">
+                    <div className="w-full bg-glass-strong h-1 mt-3 rounded-full overflow-hidden">
                       <div className="bg-text-secondary h-full" style={{ width: `${selectedAnomaly.overallScore}%` }} />
                     </div>
                   </div>
-                  <div className="bg-glass-strong p-5">
+                  <div className="bg-void/50 p-5">
                     <div className="text-[9px] uppercase tracking-[0.2em] font-bold text-text-secondary mb-2">Confidence</div>
                     <div className="text-2xl font-mono font-bold text-success">{selectedAnomaly.confidence}%</div>
-                    <div className="w-full bg-glass-strong h-1.5 mt-3 rounded-full overflow-hidden">
+                    <div className="w-full bg-glass-strong h-1 mt-3 rounded-full overflow-hidden">
                       <div className="bg-success h-full shadow-[0_0_8px_rgba(0,255,170,0.5)]" style={{ width: `${selectedAnomaly.confidence}%` }} />
                     </div>
                   </div>
                 </div>
 
                 {/* Deviation bars */}
-                <div className="p-6 border-b border-glass-border space-y-5 bg-glass">
+                <div className="p-5 border-b border-glass-border space-y-4 bg-void/30">
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex items-center gap-2 text-text-secondary text-[10px] font-mono uppercase tracking-widest"><Activity className="w-3.5 h-3.5" /> Spatial Dev</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="flex items-center gap-2 text-text-secondary text-[9px] font-mono uppercase tracking-widest"><Activity className="w-3 h-3" /> Spatial Dev</span>
                       <span className="font-mono text-text-primary text-[10px]">{selectedAnomaly.spatialDeviationScore}/100</span>
                     </div>
-                    <div className="w-full bg-glass-strong h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-glass h-1 rounded-full overflow-hidden">
                       <div className="bg-warning h-full transition-all shadow-[0_0_8px_rgba(255,166,0,0.5)]" style={{ width: `${selectedAnomaly.spatialDeviationScore}%` }} />
                     </div>
                   </div>
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="flex items-center gap-2 text-text-secondary text-[10px] font-mono uppercase tracking-widest"><Clock className="w-3.5 h-3.5" /> Temp Change</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="flex items-center gap-2 text-text-secondary text-[9px] font-mono uppercase tracking-widest"><Clock className="w-3 h-3" /> Temp Change</span>
                       <span className="font-mono text-text-primary text-[10px]">{selectedAnomaly.temporalChangeScore}/100</span>
                     </div>
-                    <div className="w-full bg-glass-strong h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-glass h-1 rounded-full overflow-hidden">
                       <div className="bg-danger h-full transition-all shadow-[0_0_8px_rgba(255,77,77,0.5)]" style={{ width: `${selectedAnomaly.temporalChangeScore}%` }} />
                     </div>
                   </div>
                 </div>
 
                 {/* Metadata */}
-                <div className="grid grid-cols-2 gap-y-5 p-6 bg-glass">
+                <div className="grid grid-cols-2 gap-y-4 p-5 bg-transparent">
                   <div>
-                    <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Depth</div>
+                    <div className="text-[8px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1">Seabed Nature</div>
+                    <div className="text-text-primary font-mono text-[11px] capitalize">{selectedAnomaly.seabedNature || 'Unknown'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1">Risk Level</div>
+                    <div className="text-text-primary font-mono text-[11px] capitalize">{selectedAnomaly.riskLevel || selectedAnomaly.severity}</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1">Depth</div>
                     <div className="text-text-primary font-mono text-[11px]">{selectedAnomaly.depthMeters} m</div>
                   </div>
                   <div>
-                    <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Detected</div>
+                    <div className="text-[8px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1">Detected</div>
                     <div className="text-text-primary font-mono text-[11px]">{new Date(selectedAnomaly.detectedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                   </div>
                   <div className="col-span-2">
-                    <div className="text-[9px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Coordinates</div>
-                    <div className="text-text-primary font-mono text-[11px] flex items-center gap-2 bg-glass p-2.5 rounded-xl border border-glass-border">
+                    <div className="text-[8px] text-text-secondary font-mono uppercase tracking-widest font-bold mb-1.5">Coordinates</div>
+                    <div className="text-text-primary font-mono text-[11px] flex items-center gap-2 bg-glass p-2.5 rounded-lg border border-glass-border">
                       <Navigation className="w-3.5 h-3.5 text-accent shrink-0" />
                       {formatCoordinates(selectedAnomaly.latitude, selectedAnomaly.longitude)}
                     </div>
@@ -392,29 +451,29 @@ export default function MapWorkspace() {
               </div>
 
               {/* Actions */}
-              <div className="p-5 border-t border-glass-border bg-glass-strong flex flex-col gap-3 shrink-0">
-                <div className="flex gap-3">
+              <div className="p-5 border-t border-glass-border bg-glass/50 flex flex-col gap-3 shrink-0">
+                <div className="flex gap-2">
                   <button onClick={() => setShowSonarModal(true)}
-                    className="flex-1 bg-glass hover:bg-glass-strong text-text-primary text-[11px] font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300 border border-glass-border">
+                    className="flex-1 bg-void hover:bg-surface text-text-primary text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-lg transition-all duration-300 border border-glass-border">
                     Sonar
                   </button>
                   <button onClick={() => setShowExplanationDrawer(true)}
-                    className="flex-1 bg-glass hover:bg-glass-strong text-text-primary text-[11px] font-bold uppercase tracking-widest py-3 rounded-xl transition-all duration-300 border border-glass-border flex items-center justify-center gap-1.5">
+                    className="flex-1 bg-void hover:bg-surface text-text-primary text-[10px] font-bold uppercase tracking-widest py-2.5 rounded-lg transition-all duration-300 border border-glass-border flex items-center justify-center gap-1.5">
                     <Zap className="w-3.5 h-3.5 text-accent" /> Explain
                   </button>
                 </div>
-                <button onClick={() => navigate('/review')}
-                  className="w-full bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent text-[11px] font-bold uppercase tracking-widest py-3.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-[var(--glow-accent)]">
+                <button onClick={() => navigate('/review', { state: { selectedAnomalyId: selectedAnomaly.id } })}
+                  className="w-full bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent text-[10px] font-bold uppercase tracking-widest py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 hover:shadow-[var(--glow-accent)]">
                   Review Target <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           ) : (
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="px-6 py-5 border-b border-glass-border flex justify-between items-center bg-glass-strong shrink-0">
+              <div className="px-5 py-4 border-b border-glass-border flex justify-between items-center bg-transparent shrink-0">
                 <h3 className="text-text-primary font-bold text-[11px] uppercase tracking-[0.15em]">Anomalies ({filteredAnomalies.length})</h3>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2.5 bg-glass">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1.5 bg-transparent">
                 {filteredAnomalies.map(anomaly => (
                   <button
                     key={`list-${anomaly.id}`}
@@ -423,29 +482,29 @@ export default function MapWorkspace() {
                       mapRef.current?.flyTo({ 
                         center: [anomaly.longitude, anomaly.latitude], 
                         zoom: 11, 
-                        speed: 1.5,
-                        curve: 1,
+                        speed: 1.0,
+                        curve: 1.42,
                         essential: true 
                       });
                     }}
-                    className={`w-full flex flex-col text-left px-5 py-4 rounded-xl transition-all duration-300 border focus:outline-none ${
+                    className={`w-full flex flex-col text-left px-4 py-3 rounded-lg transition-all duration-300 border focus:outline-none ${
                       selectedAnomalyId === anomaly.id
                         ? 'bg-glass-strong border-glass-border-strong shadow-[var(--glow-hover)]'
-                        : 'bg-glass border-glass-border hover:bg-glass-strong hover:border-glass-border'
+                        : 'bg-transparent border-transparent hover:bg-glass hover:border-glass-border'
                     }`}
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`text-[12px] font-mono font-bold uppercase tracking-wider ${selectedAnomalyId === anomaly.id ? 'text-accent' : 'text-text-primary'}`}>{anomaly.label}</span>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${selectedAnomalyId === anomaly.id ? 'text-accent' : 'text-text-primary'}`}>{anomaly.label}</span>
                       <StatusBadge status={anomaly.severity === 'high' ? 'highly_anomalous' : anomaly.severity === 'unusual' ? 'unusual' : 'normal'} />
                     </div>
-                    <div className="text-[10px] text-text-secondary font-mono flex gap-4">
-                      <span>SCORE: <span className="text-text-primary">{anomaly.overallScore}</span></span>
-                      <span>DEPTH: <span className="text-text-primary">{anomaly.depthMeters}m</span></span>
+                    <div className="text-[9px] text-text-secondary font-mono flex gap-3 opacity-80">
+                      <span>SC: <span className="text-text-primary">{anomaly.overallScore}</span></span>
+                      <span>D: <span className="text-text-primary">{anomaly.depthMeters}m</span></span>
                     </div>
                   </button>
                 ))}
                 {filteredAnomalies.length === 0 && (
-                  <div className="text-center p-8 text-text-muted text-[11px] font-mono uppercase tracking-widest bg-glass rounded-xl border border-dashed border-glass-border">No matching records</div>
+                  <div className="text-center p-6 text-text-muted text-[10px] font-mono uppercase tracking-widest bg-glass rounded-lg border border-dashed border-glass-border">No matching records</div>
                 )}
               </div>
             </div>

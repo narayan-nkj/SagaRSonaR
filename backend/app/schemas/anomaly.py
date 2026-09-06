@@ -11,6 +11,7 @@ class AnomalyResponse(BaseModel):
     confidence: float
     risk_score: float
     risk_level: str
+    seabed_nature: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     depth: Optional[float] = None
@@ -18,6 +19,12 @@ class AnomalyResponse(BaseModel):
     explanation: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
+    
+    optical_image_path: Optional[str] = None
+    optical_classification: Optional[str] = None
+    optical_confidence: Optional[float] = None
+    final_classification: Optional[str] = None
+    final_confidence: Optional[float] = None
 
     class Config:
         from_attributes = True

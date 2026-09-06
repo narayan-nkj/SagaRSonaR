@@ -13,7 +13,7 @@ export function useMap() {
   return useContext(MapContext);
 }
 
-export const Map = forwardRef(({ initialViewState, children, onIdle, interactive = true }: any, ref: React.ForwardedRef<MapRef>) => {
+export const Map = forwardRef(({ initialViewState, children, onIdle, interactive = true, cursor }: any, ref: React.ForwardedRef<MapRef>) => {
   const { theme } = useTheme();
   const [mapStyle, setMapStyle] = useState<any>(null);
 
@@ -78,6 +78,7 @@ export const Map = forwardRef(({ initialViewState, children, onIdle, interactive
           mapStyle={mapStyle}
           interactive={interactive}
           onIdle={onIdle}
+          cursor={cursor}
           style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
           attributionControl={false}
           crossSourceCollisions={false}

@@ -10,7 +10,7 @@ import type {
   ModelFeedback
 } from '../data/mockData';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export const getDashboardMetrics = async (harbour?: string): Promise<DashboardMetrics> => {
   // Fetch actual counts from anomalies and missions
@@ -82,7 +82,14 @@ export const getAnomalies = async (filters?: AnomalyFilters, harbour?: string): 
       latitude: a.latitude || 0,
       longitude: a.longitude || 0,
       depthMeters: Math.round((a.depth || 0) * 10) / 10,
-      detectedAt: a.created_at,
+      seabedNature: a.seabed_nature,
+      riskLevel: a.risk_level,
+      opticalImagePath: a.optical_image_path,
+      opticalClassification: a.optical_classification,
+      opticalConfidence: a.optical_confidence,
+      finalClassification: a.final_classification,
+      finalConfidence: a.final_confidence,
+      detectedAt: a.created_at || new Date().toISOString(),
       firstObserved: a.created_at,
       explanation: a.explanation || `Detected ${a.type} with ${(a.confidence * 100).toFixed(1)}% confidence.`,
       notes: a.notes,
@@ -102,8 +109,18 @@ export const getAnomalyById = async (id: string, harbour?: string): Promise<Anom
   return anomaly;
 };
 
-export const startSurveyProcessing = async (_surveyId: string): Promise<ProcessingJob> => {
-  return { status: 'complete', anomaliesCount: 0 };
+export const startSurveyProcessing = async (file?: File): Promise<any> => {
+  if (file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    return res.json();
+  }
+  return { status: 'complete', anomaliesCount: 0, anomalies: [] };
 };
 
 export const getTemporalSeries = async (_anomalyId: string, harbour?: string): Promise<TemporalPoint[]> => {
