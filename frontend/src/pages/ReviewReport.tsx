@@ -331,7 +331,7 @@ const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0
         </div>
         <div className="w-full h-72 bg-void border border-border relative overflow-hidden flex items-center justify-center">
           <img 
-            src={`http://localhost:8000/api/uploads/${selectedAnomaly.opticalImagePath.split('/').pop()}`} 
+            src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/uploads/${selectedAnomaly.opticalImagePath.split('/').pop()}`} 
             alt="Optical Evidence" 
             className="w-full h-full object-cover opacity-90"
           />

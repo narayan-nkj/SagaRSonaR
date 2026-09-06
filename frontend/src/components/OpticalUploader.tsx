@@ -50,7 +50,8 @@ export default function OpticalUploader({ anomalyId, onAnalysisComplete }: Optic
     formData.append('file', file);
     
     try {
-      const res = await fetch(`http://localhost:8000/api/anomalies/${anomalyId}/optical`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${API_URL}/anomalies/${anomalyId}/optical`, {
         method: 'POST',
         body: formData,
       });
