@@ -38,9 +38,9 @@ export default function TemporalComparison() {
  ? 0.1 + (sliderIndex / (chartData.length - 1)) * 0.6
  : 0.4;
 
- return (
- <div className="relative flex-1 w-full flex flex-col h-full bg-void text-text-primary overflow-hidden">
- <div className="relative z-10 flex flex-col h-full gap-6 w-full p-6 overflow-y-auto custom-scrollbar">
+  return (
+    <div className="absolute inset-0 flex flex-col bg-void text-text-primary overflow-hidden font-sans">
+      <div className="relative z-10 flex flex-col h-full gap-4 w-full p-4">
  {/* Header */}
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
  <div>
@@ -54,26 +54,27 @@ export default function TemporalComparison() {
  </p>
  </div>
 
- {/* Survey selector pills */}
- <div className={`flex bg-void border border-border p-0.5 shrink-0`}>
- {[
- { label: 'Baseline', idx: baselineIndex },
- { label: 'Previous Survey', idx: previousSurveyIndex },
- { label: 'Current Survey', idx: currentSurveyIndex },
- ].map(({ label, idx }) => (
- <button
- key={label}
- onClick={() => setSliderIndex(idx)}
- className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors ${
- sliderIndex === idx
- ? 'bg-surface text-text-primary border border-border'
- : 'text-text-secondary hover:text-text-primary hover:bg-void border border-transparent'
- }`}
- >
- {label}
- </button>
- ))}
- </div>
+        {/* Survey selector pills */}
+        <div className={`flex bg-void/80 backdrop-blur-md border border-glass-border p-1 rounded-full shrink-0 shadow-inner`}>
+          {[
+            { label: 'Baseline', idx: baselineIndex },
+            { label: 'Previous Survey', idx: previousSurveyIndex },
+            { label: 'Current Survey', idx: currentSurveyIndex },
+          ].map(({ label, idx }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setSliderIndex(idx)}
+              className={`px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-full cursor-pointer ${
+                sliderIndex === idx
+                  ? 'bg-glass-strong text-text-primary shadow-[0_0_15px_rgba(0,240,255,0.2)] border border-accent/30'
+                  : 'text-text-muted hover:text-text-primary hover:bg-glass border border-transparent'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
  </div>
 
  <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 flex-1 min-h-0">
@@ -246,7 +247,7 @@ export default function TemporalComparison() {
  </div>
 
  {/* Evidence + AI */}
- <div className="flex flex-col gap-4 flex-1 min-h-0">
+ <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar min-h-0 pb-4">
  <div className={`${paneClass} p-4`}>
  <h4 className="text-[9px] font-bold text-text-secondary uppercase tracking-[0.2em] mb-4">Evidence Summary</h4>
  <ul className="space-y-3">

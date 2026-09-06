@@ -114,3 +114,16 @@ class Report(Base):
     created_at = Column(DateTime, default=get_utc_now)
 
     mission = relationship("Mission", back_populates="reports")
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    email = Column(String, unique=True, index=True)
+    full_name = Column(String)
+    hashed_password = Column(String)
+    role = Column(String, default="Operator")
+    is_verified = Column(Integer, default=0) # 0 = false, 1 = true
+    verification_token = Column(String, nullable=True)
+    created_at = Column(DateTime, default=get_utc_now)
+

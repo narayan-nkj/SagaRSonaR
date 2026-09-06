@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
-import { Anchor, ShieldAlert, Lock, Mail, User, RefreshCw, Wand2, CheckCircle2 } from 'lucide-react';
+import { Anchor, ShieldAlert, Lock, Mail, Loader2, User, RefreshCw, Wand2, CheckCircle2 } from 'lucide-react';
 
 const generateCaptcha = () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -9,8 +10,8 @@ const generateCaptcha = () => {
 
 export default function LoginPage() {
   const { login } = useUser();
+  const navigate = useNavigate();
   
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
@@ -35,17 +36,12 @@ export default function LoginPage() {
     setPassword(`S@G4R_${suggested}`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!name || !email || !password) {
+    if (!email || !password) {
       setError('All fields are required.');
-      return;
-    }
-
-    if (!email.toLowerCase().endsWith('@gmail.com') && !email.toLowerCase().endsWith('@sagar.gov.in')) {
-      setError('Only approved Gmail or SAGAR domains are permitted.');
       return;
     }
 
@@ -55,17 +51,36 @@ export default function LoginPage() {
       return;
     }
 
-    // Simulate verification
     setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
+    
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Authentication failed');
+      }
+      
+      localStorage.setItem('sagar_token', data.access_token);
+      localStorage.setItem('sagar_user', JSON.stringify(data.user));
+      
       setVerified(true);
       
       // Complete login after toast
       setTimeout(() => {
-        login(email, name);
-      }, 1500);
-    }, 2000);
+        login(data.user.email, data.user.fullName);
+        navigate('/dashboard');
+      }, 1000);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication.');
+      setIsVerifying(false);
+      setVerified(false);
+    }
   };
 
   return (
@@ -154,23 +169,7 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-5">
-              {/* Name */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono tracking-widest text-text-muted uppercase ml-1">Full Name</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="w-4 h-4 text-text-muted group-focus-within:text-accent transition-colors" />
-                  </div>
-                  <input 
-                    type="text" 
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-void/50 border border-glass-border text-text-primary text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-text-muted/50"
-                    placeholder="Enter your name"
-                  />
-                </div>
-              </div>
+              {/* Removed Name field for login */}
 
               {/* Email */}
               <div className="space-y-1.5">
@@ -184,8 +183,8 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-void/50 border border-glass-border text-text-primary text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-text-muted/50"
-                    placeholder="operator@gmail.com"
+                    className="w-full bg-void/50 border border-glass-border text-text-primary text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-text-muted/50 autofill-bg-fix"
+                    placeholder="operator@sagar.gov.in"
                   />
                 </div>
               </div>
@@ -204,8 +203,8 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-void/50 border border-glass-border text-text-primary text-sm rounded-xl pl-10 pr-12 py-3 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-text-muted/50"
-                    placeholder="••••••••••••"
+                    className="w-full bg-void/50 border border-glass-border text-text-primary text-sm rounded-xl pl-10 pr-12 py-3 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all placeholder:text-text-muted/50 autofill-bg-fix"
+                    placeholder="Auth protocol sequence"
                   />
                   <button 
                     type="button"
@@ -268,7 +267,16 @@ export default function LoginPage() {
             </div>
           </form>
           
-          <div className="mt-8 text-center flex flex-col gap-1 text-[10px] text-text-muted font-mono uppercase tracking-widest opacity-60">
+          <div className="mt-6 text-center">
+            <p className="text-xs text-text-muted">
+              Unauthorized?{' '}
+              <Link to="/signup" className="text-accent hover:text-accent-light underline transition-colors">
+                Request access
+              </Link>
+            </p>
+          </div>
+          
+          <div className="mt-6 text-center flex flex-col gap-1 text-[10px] text-text-muted font-mono uppercase tracking-widest opacity-60">
             <span>UNCLASSIFIED / FOUO</span>
             <span>V 2.0.4.5 · BUILD 88A</span>
           </div>

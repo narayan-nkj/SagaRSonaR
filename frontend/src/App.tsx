@@ -15,6 +15,8 @@ import { HARBOURS } from './data/mockData';
 import type { Anomaly } from './data/mockData';
 import BootScreen from './components/BootScreen';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 import { HarbourContext, RealTimeAnomalyContext } from './contexts/AppContext';
 
@@ -339,23 +341,33 @@ const AppRouter = () => {
     return <BootScreen onComplete={() => setBooting(false)} />;
   }
 
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
-
   return (
     <Router>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/upload" element={<UploadProcess />} />
-          <Route path="/map" element={<MapWorkspace />} />
-          <Route path="/comparison" element={<TemporalComparison />} />
-          <Route path="/review" element={<ReviewReport />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </AppShell>
+      <Routes>
+        {!isAuthenticated ? (
+          <>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/verify/:token" element={<VerifyEmailPage />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (
+          <Route path="*" element={
+            <AppShell>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/upload" element={<UploadProcess />} />
+                <Route path="/map" element={<MapWorkspace />} />
+                <Route path="/comparison" element={<TemporalComparison />} />
+                <Route path="/review" element={<ReviewReport />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </AppShell>
+          } />
+        )}
+      </Routes>
     </Router>
   );
 };

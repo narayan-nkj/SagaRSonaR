@@ -4,7 +4,7 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging
 import logging
 
-from app.api import routes_health, routes_missions, routes_sonar, routes_detection, routes_anomalies, routes_pipeline, routes_reports, routes_demo, routes_upload
+from app.api import routes_auth, routes_health, routes_missions, routes_sonar, routes_detection, routes_anomalies, routes_pipeline, routes_reports, routes_demo, routes_upload
 from app.database.database import engine, Base, SessionLocal
 from app.database.seed import seed_database
 
@@ -48,6 +48,7 @@ async def startup_event():
     finally:
         db.close()
 
+app.include_router(routes_auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(routes_health.router, prefix="/api", tags=["Health"])
 app.include_router(routes_missions.router, prefix="/api/missions", tags=["Missions"])
 app.include_router(routes_sonar.router, prefix="/api/sonar", tags=["Sonar"])

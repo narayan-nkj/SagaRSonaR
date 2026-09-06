@@ -198,8 +198,17 @@
    ═══════════════════════════════════════════════════ */
 input[type="range"] {
   -webkit-appearance: none;
-  appearance: none;
   background: transparent;
+}
+
+/* Fix autofill background for dark mode */
+.autofill-bg-fix:-webkit-autofill,
+.autofill-bg-fix:-webkit-autofill:hover,
+.autofill-bg-fix:-webkit-autofill:focus,
+.autofill-bg-fix:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--theme-color-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px rgba(0, 0, 0, 0) inset !important;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   height: 2px;

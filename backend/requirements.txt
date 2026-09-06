@@ -17,3 +17,6 @@ pytest
 httpx
 python-multipart
 python-multipart
+pyjwt
+passlib[bcrypt]
+email-validator

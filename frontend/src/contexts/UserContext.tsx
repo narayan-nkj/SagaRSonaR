@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface UserProfile {
   fullName: string;
@@ -36,6 +36,28 @@ export const useUser = () => useContext(UserContext);
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('sagar_token');
+    const userStr = localStorage.getItem('sagar_user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setProfile({
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          avatarUrl: null
+        });
+        setIsAuthenticated(true);
+      } catch (e) {
+        localStorage.removeItem('sagar_token');
+        localStorage.removeItem('sagar_user');
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     setProfile(prev => {
@@ -45,6 +67,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (email: string, name: string) => {
+    // Keeping this for backwards compatibility, but we expect the login page to call the API 
+    // and set localStorage before calling this, or we can just update state here.
     setProfile(prev => {
       const next = { ...prev, email, fullName: name || 'Operator' };
       return next;
@@ -53,8 +77,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    localStorage.removeItem('sagar_token');
+    localStorage.removeItem('sagar_user');
     setIsAuthenticated(false);
   };
+
+  if (isLoading) return null; // Or a small spinner
 
   return (
     <UserContext.Provider value={{ profile, updateProfile, isAuthenticated, login, logout }}>
