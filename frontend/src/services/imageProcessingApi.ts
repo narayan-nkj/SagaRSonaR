@@ -55,22 +55,36 @@ export const imageProcessingApi = {
   createJob: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
+    const token = localStorage.getItem('sagar_token');
     const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs`, {
       method: 'POST',
       body: formData,
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
     });
     if (!res.ok) throw new Error('Failed to create job');
     return res.json();
   },
   
   getJobStatus: async (jobId: string): Promise<ImageProcessingJobResponse> => {
-    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}`);
+    const token = localStorage.getItem('sagar_token');
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
     if (!res.ok) throw new Error('Failed to fetch status');
     return res.json();
   },
   
   getJobResult: async (jobId: string): Promise<ImageProcessingJobResponse> => {
-    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}/result`);
+    const token = localStorage.getItem('sagar_token');
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}/result`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
     if (!res.ok) throw new Error('Failed to fetch result');
     return res.json();
   }
