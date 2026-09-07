@@ -147,3 +147,40 @@ def get_job_result(
     # For now, it's the same schema as status, but typically result might return files directly
     # Since prompt specifies schema, returning the full schema.
     return get_job_status(job_id, db, current_user)
+
+@router.post("/jobs/{job_id}/analyze", response_model=ImageProcessingJobResponse)
+def analyze_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    job = db.query(ImageProcessingJob).filter(ImageProcessingJob.id == job_id, ImageProcessingJob.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    if job.status != "assessed":
+        raise HTTPException(status_code=400, detail=f"Job is not in assessed state. Current state: {job.status}")
+        
+    job.status = "processing"
+    job.stage = "anomaly detection"
+    db.commit()
+    db.refresh(job)
+    
+    background_tasks.add_task(ImageProcessingService.analyze_job, db, job.id)
+    
+    return get_job_status(job_id, db, current_user)
+
+@router.delete("/jobs/{job_id}", status_code=204)
+def delete_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    job = db.query(ImageProcessingJob).filter(ImageProcessingJob.id == job_id, ImageProcessingJob.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    db.delete(job)
+    db.commit()
+    return None

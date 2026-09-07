@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { UploadCloud, Image as ImageIcon, CheckCircle, AlertTriangle, Download, RefreshCw, Layers } from 'lucide-react';
+import { UploadCloud, Image as ImageIcon, CheckCircle, AlertTriangle, Download, RefreshCw, Layers, Trash2 } from 'lucide-react';
 import { imageProcessingApi, ImageProcessingJobResponse } from '../services/imageProcessingApi';
 
 const ImageProcessing: React.FC = () => {
@@ -22,6 +22,19 @@ const ImageProcessing: React.FC = () => {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  const handleDeleteJob = async (id: string) => {
+    try {
+      await imageProcessingApi.deleteJob(id);
+      if (jobId === id) {
+        setJobId(null);
+        setResult(null);
+      }
+      fetchHistory();
+    } catch (err) {
+      console.error('Failed to delete job', err);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -52,10 +65,10 @@ const ImageProcessing: React.FC = () => {
         try {
           const status = await imageProcessingApi.getJobStatus(jobId);
           setResult(status);
-          if (status.status === 'completed' || status.status === 'failed') {
+          if (status.status === 'completed' || status.status === 'failed' || status.status === 'assessed') {
             setIsProcessing(false);
             clearInterval(interval);
-            if (status.status === 'completed') {
+            if (status.status === 'completed' || status.status === 'assessed') {
               fetchHistory();
             }
           }
@@ -127,25 +140,48 @@ const ImageProcessing: React.FC = () => {
           )}
 
           {/* Quality Panel */}
-          {result?.status === 'completed' && result.qualityAssessment && (
-            <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg">
-              <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-success" /> Quality Assessment
-              </h3>
-              <div className="space-y-3 text-xs text-text-muted">
-                <div className="flex justify-between"><span>Overall Score:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.overallScore}/100</span></div>
-                <div className="flex justify-between"><span>Category:</span> <span className="text-text-primary font-mono uppercase">{result.qualityAssessment.category}</span></div>
-                <div className="flex justify-between"><span>Speckle Noise:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.speckleNoise}</span></div>
-                <div className="flex justify-between"><span>Data Dropout:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.dataDropoutPercentage}%</span></div>
-                <div className="flex justify-between"><span>Image Coverage:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.imageCoveragePercentage}%</span></div>
-                <div className="flex justify-between"><span>Motion Distortion:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.motionDistortion}</span></div>
-                <div className="flex justify-between"><span>Shadow Visibility:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.shadowVisibility}</span></div>
-                <div className="flex justify-between"><span>Missing Region:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.missingRegionPercentage}%</span></div>
-                <div className="flex justify-between"><span>Contrast Score:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.contrastScore}</span></div>
+          {(result?.status === 'completed' || result?.status === 'assessed') && result.qualityAssessment && (
+            <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg flex flex-col gap-4">
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-success" /> Quality Assessment
+                </h3>
+                <div className="space-y-3 text-xs text-text-muted">
+                  <div className="flex justify-between"><span>Overall Score:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.overallScore}/100</span></div>
+                  <div className="flex justify-between"><span>Category:</span> <span className="text-text-primary font-mono uppercase">{result.qualityAssessment.category}</span></div>
+                  <div className="flex justify-between"><span>Speckle Noise:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.speckleNoise}</span></div>
+                  <div className="flex justify-between"><span>Data Dropout:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.dataDropoutPercentage}%</span></div>
+                  <div className="flex justify-between"><span>Image Coverage:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.imageCoveragePercentage}%</span></div>
+                  <div className="flex justify-between"><span>Motion Distortion:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.motionDistortion}</span></div>
+                  <div className="flex justify-between"><span>Shadow Visibility:</span> <span className="text-text-primary font-mono capitalize">{result.qualityAssessment.shadowVisibility}</span></div>
+                  <div className="flex justify-between"><span>Missing Region:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.missingRegionPercentage}%</span></div>
+                  <div className="flex justify-between"><span>Contrast Score:</span> <span className="text-text-primary font-mono">{result.qualityAssessment.contrastScore}</span></div>
+                </div>
+                {result.qualityAssessment.warnings?.length > 0 && (
+                  <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
+                    <strong>Warnings:</strong> {result.qualityAssessment.warnings.join(', ')}
+                  </div>
+                )}
               </div>
-              {result.qualityAssessment.warnings?.length > 0 && (
-                <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
-                  <strong>Warnings:</strong> {result.qualityAssessment.warnings.join(', ')}
+              
+              {result.status === 'assessed' && (
+                <div className="mt-2 border-t border-glass-border pt-4">
+                  <button
+                    onClick={async () => {
+                      if (!jobId) return;
+                      setIsProcessing(true);
+                      try {
+                        await imageProcessingApi.analyzeJob(jobId);
+                      } catch (err: any) {
+                        setError(err.message || 'Failed to start analysis');
+                        setIsProcessing(false);
+                      }
+                    }}
+                    disabled={isProcessing}
+                    className="w-full bg-success text-void py-2.5 rounded-lg text-sm font-medium hover:bg-success/90 disabled:opacity-50 transition-colors"
+                  >
+                    Analyze Anomaly
+                  </button>
                 </div>
               )}
             </div>
@@ -208,24 +244,27 @@ const ImageProcessing: React.FC = () => {
               {/* Shadow/Object analysis */}
               {result.regionAnalysis && result.regionAnalysis.length > 0 && (
                 <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg">
-                  <h3 className="text-sm font-semibold mb-4">Shadow and Real-Object Analysis</h3>
+                  <h3 className="text-sm font-semibold mb-4">Anomaly Detection Results</h3>
                   <div className="space-y-3">
                     {result.regionAnalysis.map(region => (
                       <div key={region.id} className="p-3 bg-glass-strong rounded-lg border border-glass-border text-xs">
                         <div className="flex justify-between items-center mb-1">
                            <span className="font-mono text-accent">{region.label}</span>
-                           <span className="text-text-muted">Conf: {region.objectConfidence > region.shadowConfidence ? region.objectConfidence : region.shadowConfidence}</span>
+                           <span className="text-text-muted">Conf: {(region.objectConfidence * 100).toFixed(1)}%</span>
                         </div>
                         <p className="text-text-muted mt-1">{region.explanation}</p>
-                        {region.uncertainty > 0.2 && (
-                          <div className="mt-2 text-warning italic">Classification is uncertain. Additional sonar passes or optical verification may be required.</div>
-                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
             </>
+          ) : result?.status === 'assessed' ? (
+            <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg h-full flex flex-col items-center justify-center text-center">
+              <Layers className="w-12 h-12 text-success mb-4" />
+              <h3 className="text-text-primary text-sm font-medium">Quality Assessment Complete</h3>
+              <p className="text-xs text-text-muted max-w-sm mt-2">The image has been pre-processed and quality metrics are available. Review the metrics in the panel and click "Analyze Anomaly" to perform detection.</p>
+            </div>
           ) : (
             <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg h-full flex flex-col items-center justify-center text-center">
               <Layers className="w-12 h-12 text-glass-border-strong mb-4" />
@@ -240,23 +279,37 @@ const ImageProcessing: React.FC = () => {
       <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg">
         <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-4">Previously Processed Sonar Examples</h2>
         {history.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex flex-col gap-3">
             {history.map((job) => (
-              <div key={job.jobId} className="border border-glass-border rounded-lg p-2 bg-glass-strong hover:border-cyan cursor-pointer transition-colors" onClick={() => {
+              <div key={job.jobId} className="flex items-center justify-between border border-glass-border rounded-lg p-3 bg-glass-strong hover:border-cyan cursor-pointer transition-colors" onClick={() => {
                 setJobId(job.jobId);
                 setResult(job);
               }}>
-                <div className="aspect-square bg-void/50 rounded flex items-center justify-center overflow-hidden mb-2">
-                  {job.processedImageUrl ? (
-                    <img src={job.processedImageUrl} alt="Processed" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
-                  ) : (
-                    <ImageIcon className="w-6 h-6 text-glass-border-strong" />
-                  )}
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-void/50 rounded flex items-center justify-center overflow-hidden shrink-0">
+                    {job.processedImageUrl ? (
+                      <img src={job.processedImageUrl} alt="Processed" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-glass-border-strong" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-text-primary font-mono">ID: {job.jobId.split('-')[0]}</div>
+                    <div className="text-[10px] capitalize font-semibold mt-1">
+                      {job.status === 'completed' ? <span className="text-success">Completed</span> : job.status === 'assessed' ? <span className="text-success">Assessed</span> : <span className="text-warning">{job.status}</span>}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[10px] text-text-muted truncate font-mono">ID: {job.jobId.split('-')[0]}</div>
-                <div className="text-[10px] capitalize font-semibold mt-1">
-                  {job.status === 'completed' ? <span className="text-success">Completed</span> : <span className="text-warning">{job.status}</span>}
-                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteJob(job.jobId);
+                  }}
+                  className="p-2 text-text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors"
+                  title="Remove"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
