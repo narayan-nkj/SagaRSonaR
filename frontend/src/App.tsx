@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, Navigate, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, UploadCloud, Map, History, FileCheck, Bell, User, Menu, X, Anchor, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, UploadCloud, Map, History, FileCheck, Bell, User, Menu, X, Anchor, Sun, Moon, Layers } from 'lucide-react';
 import Dashboard from './pages/Dashboard'; // trigger refresh
 import UploadProcess from './pages/UploadProcess';
+import ImageProcessing from './pages/ImageProcessing';
 import MapWorkspace from './pages/MapWorkspace';
 import TemporalComparison from './pages/TemporalComparison';
 import ReviewReport from './pages/ReviewReport';
@@ -23,6 +24,7 @@ import { HarbourContext, RealTimeAnomalyContext } from './contexts/AppContext';
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { id: 'upload', label: 'Upload Survey', path: '/upload', icon: UploadCloud },
+  { id: 'image-processing', label: 'Image Processing', path: '/image-processing', icon: Layers },
   { id: 'map', label: 'Baseline & Anomalies', path: '/map', icon: Map },
   { id: 'comparison', label: 'Temporal Comparison', path: '/comparison', icon: History },
   { id: 'review', label: 'Human Review', path: '/review', icon: FileCheck },
@@ -366,6 +368,7 @@ const AppRouter = () => {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/upload" element={<UploadProcess />} />
+                <Route path="/image-processing" element={<ImageProcessing />} />
                 <Route path="/map" element={<MapWorkspace />} />
                 <Route path="/comparison" element={<TemporalComparison />} />
                 <Route path="/review" element={<ReviewReport />} />

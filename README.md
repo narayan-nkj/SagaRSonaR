@@ -1,5 +1,7 @@
 # SagaRSonaR
 
+> **Note:** This repository represents the **Final Project Submission**. All final changes, features, and fixes have been committed and integrated.
+
 SagaRSonaR (SonarVision) is a full-stack application featuring a React-based frontend and a robust FastAPI-based backend. It's designed to provide a comprehensive pipeline with ML inference capabilities, data processing, and an interactive UI for analyzing seabed sonar scans.
 
 ## Features

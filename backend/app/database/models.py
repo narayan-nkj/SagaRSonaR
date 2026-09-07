@@ -127,3 +127,27 @@ class User(Base):
     verification_token = Column(String, nullable=True)
     created_at = Column(DateTime, default=get_utc_now)
 
+class ImageProcessingJob(Base):
+    __tablename__ = "image_processing_jobs"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    status = Column(String, default="queued") # queued, processing, completed, failed
+    stage = Column(String, default="queued")
+    progress = Column(Integer, default=0)
+    
+    original_image_path = Column(String, nullable=True)
+    processed_image_path = Column(String, nullable=True)
+    quality_mask_path = Column(String, nullable=True)
+    inference_mask_path = Column(String, nullable=True)
+    shadow_overlay_path = Column(String, nullable=True)
+    
+    quality_assessment = Column(String, nullable=True) # JSON string
+    mask_statistics = Column(String, nullable=True) # JSON string
+    region_analysis = Column(String, nullable=True) # JSON string
+    metadata_json = Column(String, nullable=True) # JSON string
+    warnings = Column(String, nullable=True) # JSON string
+    
+    processing_duration_ms = Column(Integer, default=0)
+    created_at = Column(DateTime, default=get_utc_now)
+

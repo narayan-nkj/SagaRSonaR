@@ -2,5 +2,7 @@
   "python.analysis.extraPaths": [
     "./backend"
   ],
-  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/bin/python"
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/bin/python",
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic"
 }

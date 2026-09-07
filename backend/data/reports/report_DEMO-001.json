@@ -6,46 +6,54 @@
     },
     "statistics": {
         "total_images": 3,
-        "total_detections": 3,
-        "total_anomalies": 3,
-        "high_risk": 2,
-        "critical": 0,
-        "average_confidence": 0.685,
-        "estimated_debris_area": 22296.0,
+        "total_detections": 4,
+        "total_anomalies": 4,
+        "high_risk": 3,
+        "critical": 1,
+        "average_confidence": 0.8125,
+        "estimated_debris_area": 312500.0,
         "detections_by_class": {
-            "ghost_net": 1,
-            "fishing_gear": 1,
-            "unknown_man_made_object": 1
+            "metal_debris": 2,
+            "unknown_man_made_object": 1,
+            "ghost_net": 1
         },
         "detections_by_risk": {
-            "HIGH": 2,
-            "MEDIUM": 1
+            "CRITICAL": 1,
+            "HIGH": 3
         }
     },
     "anomalies": [
         {
-            "anomaly_id": "ANOM-4BD5CC0E",
-            "type": "ghost_net",
-            "confidence": 0.714,
-            "risk_level": "HIGH",
-            "latitude": 18.42156811045715,
-            "longitude": 72.81399121798556
+            "anomaly_id": "ANOM-B26910B2",
+            "type": "metal_debris",
+            "confidence": 0.98,
+            "risk_level": "CRITICAL",
+            "latitude": 18.42172439940802,
+            "longitude": 72.81412178136564
         },
         {
-            "anomaly_id": "ANOM-A67F9148",
+            "anomaly_id": "ANOM-643D89A5",
             "type": "unknown_man_made_object",
-            "confidence": 0.671,
-            "risk_level": "MEDIUM",
-            "latitude": 18.421646958948017,
-            "longitude": 72.81405708776929
+            "confidence": 0.87,
+            "risk_level": "HIGH",
+            "latitude": 18.42183,
+            "longitude": 72.81421
         },
         {
-            "anomaly_id": "ANOM-38B8B826",
-            "type": "fishing_gear",
-            "confidence": 0.67,
+            "anomaly_id": "ANOM-095836F6",
+            "type": "metal_debris",
+            "confidence": 0.76,
             "risk_level": "HIGH",
-            "latitude": 18.421699055259886,
-            "longitude": 72.81410060890951
+            "latitude": 18.421337196889013,
+            "longitude": 72.81379831396632
+        },
+        {
+            "anomaly_id": "ANOM-94929F6B",
+            "type": "ghost_net",
+            "confidence": 0.64,
+            "risk_level": "HIGH",
+            "latitude": 18.421618798775313,
+            "longitude": 72.81403356283958
         }
     ]
 }

@@ -4,6 +4,8 @@ import csv
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
+from typing import Optional
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 
 from app.database.models import Report
@@ -22,7 +24,7 @@ class ReportService:
         self.report_repo = ReportRepository(db)
         self.db = db
 
-    def generate_statistics(self, mission_id: str) -> MissionStatistics:
+    def generate_statistics(self, mission_id: str) -> Optional[MissionStatistics]:
         mission = self.mission_repo.get_by_mission_id(mission_id)
         if not mission:
             return None
@@ -59,6 +61,8 @@ class ReportService:
 
     def generate_report(self, mission_id: str, report_type: str = "pdf") -> Report:
         mission = self.mission_repo.get_by_mission_id(mission_id)
+        if not mission:
+            raise ValueError(f"Mission with ID '{mission_id}' not found")
         stats = self.generate_statistics(mission_id)
         anomalies = self.anomaly_repo.get_all(mission_id=mission.id)
         

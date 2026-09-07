@@ -1,0 +1,77 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+export interface QualityAssessment {
+  overallScore: number;
+  category: 'excellent' | 'good' | 'moderate' | 'poor';
+  speckleNoise: 'low' | 'medium' | 'high';
+  dataDropoutPercentage: number;
+  imageCoveragePercentage: number;
+  motionDistortion: 'low' | 'medium' | 'high' | 'unavailable';
+  shadowVisibility: 'poor' | 'fair' | 'good' | 'unavailable';
+  missingRegionPercentage: number;
+  contrastScore: number;
+  signalQuality: number;
+  warnings: string[];
+}
+
+export interface MaskStatistics {
+  usablePercentage: number;
+  uncertainPercentage: number;
+  ignoredPercentage: number;
+  missingPercentage: number;
+  shadowPercentage: number;
+}
+
+export interface RegionCandidate {
+  id: string;
+  label: 'likely_object' | 'likely_shadow' | 'natural_seabed_feature' | 'uncertain';
+  objectConfidence: number;
+  shadowConfidence: number;
+  uncertainty: number;
+  boundingBox: { x: number; y: number; width: number; height: number };
+  features: any;
+  explanation: string;
+}
+
+export interface ImageProcessingJobResponse {
+  jobId: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  stage: string;
+  originalImageUrl?: string;
+  processedImageUrl?: string;
+  qualityMaskUrl?: string;
+  inferenceMaskUrl?: string;
+  shadowOverlayUrl?: string;
+  qualityAssessment?: QualityAssessment;
+  maskStatistics?: MaskStatistics;
+  regionAnalysis?: RegionCandidate[];
+  metadata?: any;
+  processingDurationMs?: number;
+  warnings?: string[];
+}
+
+export const imageProcessingApi = {
+  createJob: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Failed to create job');
+    return res.json();
+  },
+  
+  getJobStatus: async (jobId: string): Promise<ImageProcessingJobResponse> => {
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}`);
+    if (!res.ok) throw new Error('Failed to fetch status');
+    return res.json();
+  },
+  
+  getJobResult: async (jobId: string): Promise<ImageProcessingJobResponse> => {
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}/result`);
+    if (!res.ok) throw new Error('Failed to fetch result');
+    return res.json();
+  }
+};

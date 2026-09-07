@@ -1,0 +1,12 @@
+{
+  "venvPath": "./backend",
+  "venv": "venv",
+  "extraPaths": ["./backend"],
+  "include": ["backend/app", "backend/tests"],
+  "exclude": ["backend/venv"],
+  "reportMissingModuleSource": "none",
+  "reportMissingImports": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnknownArgumentType": "none"
+}

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     CONFIDENCE_THRESHOLD: float = 0.5
     
     # Security/CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "http://127.0.0.1:3000", "http://localhost:8000"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

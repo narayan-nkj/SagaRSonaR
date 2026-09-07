@@ -4,7 +4,7 @@ from app.core.config import get_settings
 from app.core.logging import setup_logging
 import logging
 
-from app.api import routes_auth, routes_health, routes_missions, routes_sonar, routes_detection, routes_anomalies, routes_pipeline, routes_reports, routes_demo, routes_upload
+from app.api import routes_auth, routes_health, routes_missions, routes_sonar, routes_detection, routes_anomalies, routes_pipeline, routes_reports, routes_demo, routes_upload, routes_image_processing
 from app.database.database import engine, Base, SessionLocal
 from app.database.seed import seed_database
 
@@ -58,3 +58,4 @@ app.include_router(routes_pipeline.router, prefix="/api/pipeline", tags=["Pipeli
 app.include_router(routes_reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(routes_demo.router, prefix="/api/demo", tags=["Demo"])
 app.include_router(routes_upload.router, prefix="/api/upload", tags=["Upload"])
+app.include_router(routes_image_processing.router, prefix="/api/v1/image-processing", tags=["Image Processing"])
