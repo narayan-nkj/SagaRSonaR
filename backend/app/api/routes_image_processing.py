@@ -78,6 +78,35 @@ async def create_processing_job(
     )
 
 
+@router.get("/jobs/history", response_model=list[ImageProcessingJobResponse])
+def get_job_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    jobs = db.query(ImageProcessingJob).filter(ImageProcessingJob.user_id == current_user.id).order_by(ImageProcessingJob.created_at.desc()).all()
+    responses = []
+    for job in jobs:
+        response = ImageProcessingJobResponse(
+            jobId=job.id,
+            status=job.status,
+            progress=job.progress,
+            stage=job.stage,
+            originalImageUrl=job.original_image_path,
+            processedImageUrl=job.processed_image_path,
+            qualityMaskUrl=job.quality_mask_path,
+            inferenceMaskUrl=job.inference_mask_path,
+            shadowOverlayUrl=job.shadow_overlay_path,
+            processingDurationMs=job.processing_duration_ms
+        )
+        if job.quality_assessment: response.qualityAssessment = json.loads(job.quality_assessment)
+        if job.mask_statistics: response.maskStatistics = json.loads(job.mask_statistics)
+        if job.region_analysis: response.regionAnalysis = json.loads(job.region_analysis)
+        if job.metadata_json: response.metadata = json.loads(job.metadata_json)
+        if job.warnings: response.warnings = json.loads(job.warnings)
+        responses.append(response)
+    
+    return responses
+
 @router.get("/jobs/{job_id}", response_model=ImageProcessingJobResponse)
 def get_job_status(
     job_id: str,

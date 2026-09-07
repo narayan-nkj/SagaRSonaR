@@ -8,6 +8,20 @@ const ImageProcessing: React.FC = () => {
   const [result, setResult] = useState<ImageProcessingJobResponse | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<ImageProcessingJobResponse[]>([]);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const data = await imageProcessingApi.getJobHistory();
+      setHistory(data);
+    } catch (err) {
+      console.error('Failed to load history', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -41,6 +55,9 @@ const ImageProcessing: React.FC = () => {
           if (status.status === 'completed' || status.status === 'failed') {
             setIsProcessing(false);
             clearInterval(interval);
+            if (status.status === 'completed') {
+              fetchHistory();
+            }
           }
         } catch (err: any) {
           setError(err.message || 'Failed to fetch status');
@@ -222,9 +239,32 @@ const ImageProcessing: React.FC = () => {
       {/* Examples Gallery */}
       <div className="bg-glass border border-glass-border rounded-xl p-5 shadow-lg">
         <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-4">Previously Processed Sonar Examples</h2>
-        <div className="flex items-center justify-center py-10 border-2 border-dashed border-glass-border-strong rounded-lg">
-          <p className="text-xs text-text-muted">No previously processed examples available.</p>
-        </div>
+        {history.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {history.map((job) => (
+              <div key={job.jobId} className="border border-glass-border rounded-lg p-2 bg-glass-strong hover:border-cyan cursor-pointer transition-colors" onClick={() => {
+                setJobId(job.jobId);
+                setResult(job);
+              }}>
+                <div className="aspect-square bg-void/50 rounded flex items-center justify-center overflow-hidden mb-2">
+                  {job.processedImageUrl ? (
+                    <img src={job.processedImageUrl} alt="Processed" className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-glass-border-strong" />
+                  )}
+                </div>
+                <div className="text-[10px] text-text-muted truncate font-mono">ID: {job.jobId.split('-')[0]}</div>
+                <div className="text-[10px] capitalize font-semibold mt-1">
+                  {job.status === 'completed' ? <span className="text-success">Completed</span> : <span className="text-warning">{job.status}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-10 border-2 border-dashed border-glass-border-strong rounded-lg">
+            <p className="text-xs text-text-muted">No previously processed examples available.</p>
+          </div>
+        )}
       </div>
     </div>
   );

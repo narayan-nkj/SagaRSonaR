@@ -124,6 +124,7 @@ class User(Base):
     hashed_password = Column(String)
     role = Column(String, default="Operator")
     is_verified = Column(Integer, default=0) # 0 = false, 1 = true
+    is_approved = Column(Integer, default=0) # 0 = false, 1 = true
     verification_token = Column(String, nullable=True)
     created_at = Column(DateTime, default=get_utc_now)
 

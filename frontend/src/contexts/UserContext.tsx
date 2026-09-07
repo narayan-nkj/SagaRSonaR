@@ -12,7 +12,7 @@ interface UserContextType {
   profile: UserProfile;
   updateProfile: (updates: Partial<UserProfile>) => void;
   isAuthenticated: boolean;
-  login: (email: string, name: string) => void;
+  login: (email: string, name: string, role?: string) => void;
   logout: () => void;
 }
 
@@ -39,8 +39,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('sagar_token');
-    const userStr = localStorage.getItem('sagar_user');
+    const token = sessionStorage.getItem('sagar_token');
+    const userStr = sessionStorage.getItem('sagar_user');
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
@@ -48,12 +48,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          avatarUrl: null
+          avatarUrl: user.avatarUrl || null
         });
         setIsAuthenticated(true);
       } catch (e) {
-        localStorage.removeItem('sagar_token');
-        localStorage.removeItem('sagar_user');
+        sessionStorage.removeItem('sagar_token');
+        sessionStorage.removeItem('sagar_user');
       }
     }
     setIsLoading(false);
@@ -62,23 +62,31 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = (updates: Partial<UserProfile>) => {
     setProfile(prev => {
       const next = { ...prev, ...updates };
+      
+      // Persist to sessionStorage
+      const userStr = sessionStorage.getItem('sagar_user');
+      if (userStr) {
+          try {
+              const user = JSON.parse(userStr);
+              sessionStorage.setItem('sagar_user', JSON.stringify({ ...user, ...updates }));
+          } catch (e) {}
+      }
+      
       return next;
     });
   };
 
-  const login = (email: string, name: string) => {
-    // Keeping this for backwards compatibility, but we expect the login page to call the API 
-    // and set localStorage before calling this, or we can just update state here.
+  const login = (email: string, name: string, role?: string) => {
     setProfile(prev => {
-      const next = { ...prev, email, fullName: name || 'Operator' };
+      const next = { ...prev, email, fullName: name || 'Operator', role: role || prev.role };
       return next;
     });
     setIsAuthenticated(true);
   };
 
   const logout = () => {
-    localStorage.removeItem('sagar_token');
-    localStorage.removeItem('sagar_user');
+    sessionStorage.removeItem('sagar_token');
+    sessionStorage.removeItem('sagar_user');
     setIsAuthenticated(false);
   };
 

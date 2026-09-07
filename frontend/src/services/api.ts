@@ -167,3 +167,36 @@ export const subscribeToRealTimeAnomalies = (
 ) => {
   return () => { };
 };
+
+// ==========================================
+// USER MANAGEMENT (Admin Only)
+// ==========================================
+export const getUsers = async (token: string): Promise<any[]> => {
+  const res = await fetch(`${API_BASE_URL}/auth/users`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to fetch users');
+  return res.json();
+};
+
+export const approveUser = async (userId: string, token: string): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/approve`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error('Failed to approve user');
+  return res.json();
+};
+
+export const revokeUser = async (userId: string, token: string): Promise<any> => {
+  const res = await fetch(`${API_BASE_URL}/auth/users/${userId}/revoke`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.detail || 'Failed to revoke user');
+  }
+  return res.json();
+};
+

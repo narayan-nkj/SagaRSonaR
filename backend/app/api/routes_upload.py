@@ -20,8 +20,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/")
 async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
-        raise HTTPException(status_code=400, detail="Only PNG and JPEG images are allowed")
+    if not file.filename or not file.filename.lower().endswith((".png", ".jpg", ".jpeg")):
+        raise HTTPException(status_code=400, detail="Only PNG and JPEG images are allowed, and a valid filename must be provided")
 
     # Save uploaded file
     file_path = os.path.join(UPLOAD_DIR, f"{int(time.time())}_{file.filename}")

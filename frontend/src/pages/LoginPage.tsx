@@ -80,14 +80,14 @@ export default function LoginPage() {
         throw new Error(data.detail || 'Authentication failed');
       }
       
-      localStorage.setItem('sagar_token', data.access_token);
-      localStorage.setItem('sagar_user', JSON.stringify(data.user));
+      sessionStorage.setItem('sagar_token', data.access_token);
+      sessionStorage.setItem('sagar_user', JSON.stringify(data.user));
       
       setVerified(true);
       
       // Complete login after toast
       setTimeout(() => {
-        login(data.user.email, data.user.fullName);
+        login(data.user.email, data.user.fullName, data.user.role);
         navigate('/dashboard');
       }, 1000);
     } catch (err: any) {

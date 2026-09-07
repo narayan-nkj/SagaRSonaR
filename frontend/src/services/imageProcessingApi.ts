@@ -55,7 +55,7 @@ export const imageProcessingApi = {
   createJob: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const token = localStorage.getItem('sagar_token');
+    const token = sessionStorage.getItem('sagar_token');
     const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs`, {
       method: 'POST',
       body: formData,
@@ -68,7 +68,7 @@ export const imageProcessingApi = {
   },
   
   getJobStatus: async (jobId: string): Promise<ImageProcessingJobResponse> => {
-    const token = localStorage.getItem('sagar_token');
+    const token = sessionStorage.getItem('sagar_token');
     const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}`, {
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -79,13 +79,24 @@ export const imageProcessingApi = {
   },
   
   getJobResult: async (jobId: string): Promise<ImageProcessingJobResponse> => {
-    const token = localStorage.getItem('sagar_token');
+    const token = sessionStorage.getItem('sagar_token');
     const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}/result`, {
       headers: {
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       }
     });
     if (!res.ok) throw new Error('Failed to fetch result');
+    return res.json();
+  },
+  
+  getJobHistory: async (): Promise<ImageProcessingJobResponse[]> => {
+    const token = sessionStorage.getItem('sagar_token');
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/history`, {
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
+    if (!res.ok) throw new Error('Failed to fetch job history');
     return res.json();
   }
 };

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings as SettingsIcon, Bell, Shield, CheckCircle, Camera, Anchor, Lock } from 'lucide-react';
+import { User, Settings as SettingsIcon, Bell, Shield, CheckCircle, Camera, Anchor, Lock, Users } from 'lucide-react';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { useUser } from '../contexts/UserContext';
+import { getUsers, approveUser, revokeUser } from '../services/api';
 
 const ToggleSwitch: React.FC<{ checked: boolean; onChange: () => void }> = ({ checked, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -59,6 +60,51 @@ export default function Settings() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users when tab becomes active
+  React.useEffect(() => {
+    if (activeTab === 'users' && profile.role === 'Admin') {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const token = sessionStorage.getItem('sagar_token') || '';
+      const data = await getUsers(token);
+      setUsers(data);
+    } catch (err) {
+      showToast('Failed to fetch users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleApprove = async (userId: string) => {
+    try {
+      const token = sessionStorage.getItem('sagar_token') || '';
+      await approveUser(userId, token);
+      showToast('User approved successfully');
+      fetchUsers();
+    } catch (err) {
+      showToast('Failed to approve user');
+    }
+  };
+
+  const handleRevoke = async (userId: string) => {
+    try {
+      const token = sessionStorage.getItem('sagar_token') || '';
+      await revokeUser(userId, token);
+      showToast('User access revoked');
+      fetchUsers();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to revoke user');
+    }
+  };
+
   // Avatar changes are immediate — update global context as soon as file is chosen
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -82,6 +128,7 @@ export default function Settings() {
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security & Privacy', icon: Shield },
+    ...(profile.role === 'Admin' ? [{ id: 'users', label: 'User Management', icon: Users }] : [])
   ];
 
   const selectClass = "bg-glass backdrop-blur-3xl rounded-xl border border-glass-border px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-cyan focus:shadow-[0_0_10px_rgba(6,182,212,0.2)] transition-all cursor-pointer";
@@ -265,6 +312,53 @@ export default function Settings() {
                   <option>Never</option>
                 </select>
               </SettingRow>
+            </div>
+          </div>
+        )}
+
+        {/* ── USER MANAGEMENT (ADMIN ONLY) ── */}
+        {activeTab === 'users' && profile.role === 'Admin' && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            <div>
+              <h3 className="text-sm font-bold text-text-primary tracking-[0.2em] uppercase mb-1">User Management</h3>
+              <p className="text-[10px] font-mono text-text-secondary">Approve or revoke access for S.A.G.A.R. personnel.</p>
+            </div>
+            <div className="bg-glass-strong backdrop-blur-md border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] overflow-hidden">
+              {loadingUsers ? (
+                <div className="p-8 text-center text-xs font-mono text-text-secondary">Loading personnel data...</div>
+              ) : users.length === 0 ? (
+                <div className="p-8 text-center text-xs font-mono text-text-secondary">No personnel found.</div>
+              ) : (
+                <div className="divide-y divide-glass-border">
+                  {users.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-4 hover:bg-glass transition-colors">
+                      <div>
+                        <h4 className="text-xs font-bold text-text-primary">{u.full_name} <span className="text-[9px] font-normal text-text-muted">({u.role})</span></h4>
+                        <p className="text-[10px] font-mono text-text-secondary mt-1">{u.email}</p>
+                        <div className="flex gap-2 mt-2">
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${u.is_verified ? 'text-success border-success/30 bg-success/10' : 'text-warning border-warning/30 bg-warning/10'}`}>
+                            {u.is_verified ? 'EMAIL VERIFIED' : 'PENDING VERIFICATION'}
+                          </span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${u.is_approved ? 'text-cyan border-cyan/30 bg-cyan/10' : 'text-danger border-danger/30 bg-danger/10'}`}>
+                            {u.is_approved ? 'APPROVED' : 'PENDING APPROVAL'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!u.is_approved ? (
+                          <button onClick={() => handleApprove(u.id)} className="bg-success/10 hover:bg-success/20 text-success text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-success/30 hover:border-success transition-colors">
+                            Approve
+                          </button>
+                        ) : (
+                          <button onClick={() => handleRevoke(u.id)} disabled={u.email === 'narayan.nkj@gmail.com'} className="bg-danger/10 hover:bg-danger/20 text-danger text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border border-danger/30 hover:border-danger transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Revoke
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
