@@ -24,7 +24,7 @@ import { HarbourContext, RealTimeAnomalyContext } from './contexts/AppContext';
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { id: 'upload', label: 'Upload Survey', path: '/upload', icon: UploadCloud },
-  { id: 'image-processing', label: 'Image Processing', path: '/image-processing', icon: Layers },
+  { id: 'processing', label: 'Image Processing', path: '/processing', icon: Layers },
   { id: 'map', label: 'Baseline & Anomalies', path: '/map', icon: Map },
   { id: 'comparison', label: 'Temporal Comparison', path: '/comparison', icon: History },
   { id: 'review', label: 'Human Review', path: '/review', icon: FileCheck },
@@ -368,7 +368,7 @@ const AppRouter = () => {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/upload" element={<UploadProcess />} />
-                <Route path="/image-processing" element={<ImageProcessing />} />
+                <Route path="/processing" element={<ImageProcessing />} />
                 <Route path="/map" element={<MapWorkspace />} />
                 <Route path="/comparison" element={<TemporalComparison />} />
                 <Route path="/review" element={<ReviewReport />} />

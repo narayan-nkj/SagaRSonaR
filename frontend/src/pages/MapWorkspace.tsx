@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Map, Source, Layer, Marker } from '../components/RawMap';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -26,6 +26,7 @@ export default function MapWorkspace() {
   const [showAnomalyList, setShowAnomalyList] = useState(false);
   const [showGraticule, setShowGraticule] = useState(true);
   const mapRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const radarBlipsRef = useRef<Record<string, HTMLDivElement>>({});
   const [zoomState, setZoomState] = useState(0); // 0: zoomed out, 1: mid zoom, 2: zoomed in
   const harbourMarkersRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -35,6 +36,58 @@ export default function MapWorkspace() {
   const [showSonarModal, setShowSonarModal] = useState(false);
   const [showExplanationDrawer, setShowExplanationDrawer] = useState(false);
 
+  const smoothMoveMap = useCallback((lng: number, lat: number, zoom: number = 11, speed: number = 0.6) => {
+    if (!mapRef.current) return;
+    const currentCenter = mapRef.current.getCenter();
+    if (!currentCenter) return;
+    
+    // If we're already very close, do nothing to prevent flicker/jitter
+    if (Math.abs(currentCenter.lng - lng) < 0.0001 && Math.abs(currentCenter.lat - lat) < 0.0001) return;
+    
+    // If we're close enough, use easeTo instead of flyTo to avoid zoom-out/zoom-in jumping
+    const distance = Math.sqrt(Math.pow(currentCenter.lng - lng, 2) + Math.pow(currentCenter.lat - lat, 2));
+    
+    if (distance < 0.5) {
+      mapRef.current.easeTo({
+        center: [lng, lat],
+        zoom,
+        duration: 1000,
+        essential: true
+      });
+    } else {
+      mapRef.current.flyTo({
+        center: [lng, lat],
+        zoom,
+        speed,
+        curve: 1.42,
+        essential: true
+      });
+    }
+  }, []);
+
+  // Handle Resize correctly
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          mapRef.current?.resize();
+        });
+      }, 50);
+    });
+    observer.observe(containerRef.current);
+    
+    // Fallback resize triggers for CSS transitions
+    const timers = [100, 500, 1000].map(t => setTimeout(() => mapRef.current?.resize(), t));
+    
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
   useEffect(() => {
     getAnomalies({}, activeHarbour).then(data => {
       setAnomalies(data);
@@ -43,20 +96,14 @@ export default function MapWorkspace() {
         setSelectedAnomalyId(id);
         setShowAnomalyList(true);
         const anomaly = data.find(a => a.id === id);
-        if (anomaly && mapRef.current) {
+        if (anomaly) {
           setTimeout(() => {
-            mapRef.current.flyTo({ 
-              center: [anomaly.longitude, anomaly.latitude], 
-              zoom: 11, 
-              speed: 1.0,
-              curve: 1.42,
-              essential: true
-            });
+            smoothMoveMap(anomaly.longitude, anomaly.latitude);
           }, 500);
         }
       }
     });
-  }, [activeHarbour, location.state]);
+  }, [activeHarbour, location.state, smoothMoveMap]);
 
   const liveAnomalies = useMemo(() =>
     anomalies.map(a => ({ ...a, ...(realTimeUpdates[a.id] || {}) })),
@@ -87,8 +134,9 @@ export default function MapWorkspace() {
 
         setZoomState(prev => prev !== currentZoomState ? currentZoomState : prev);
 
-        const w = map.getContainer().clientWidth;
-        const h = map.getContainer().clientHeight;
+        const container = map.getContainer();
+        const w = container.clientWidth;
+        const h = container.clientHeight;
         filteredAnomalies.forEach(a => {
           const el = radarBlipsRef.current[a.id];
           if (!el) return;
@@ -111,17 +159,11 @@ export default function MapWorkspace() {
   const harborConfig = HARBOURS[activeHarbour] || HARBOURS['Mumbai Harbor Q3'];
 
   // Zoom handlers
-  const handleZoomIn = () => mapRef.current?.zoomIn({ duration: 300 });
-  const handleZoomOut = () => mapRef.current?.zoomOut({ duration: 300 });
-  const handleRecenter = () => mapRef.current?.flyTo({ 
-    center: [harborConfig.lng, harborConfig.lat], 
-    zoom: 11.5, 
-    pitch: 0, 
-    bearing: 0, 
-    speed: 1.5,
-    curve: 1,
-    essential: true 
-  });
+  const handleZoomIn = () => mapRef.current?.zoomIn({ duration: 1200, essential: true });
+  const handleZoomOut = () => mapRef.current?.zoomOut({ duration: 1200, essential: true });
+  const handleRecenter = () => {
+    smoothMoveMap(harborConfig.lng, harborConfig.lat, 11.5, 0.8);
+  };
 
   // Jump map when harbour changes
   useEffect(() => {
@@ -131,14 +173,8 @@ export default function MapWorkspace() {
     }
     const midLng = (harborConfig.lng + harborConfig.waterCenter.lng) / 2;
     const midLat = (harborConfig.lat + harborConfig.waterCenter.lat) / 2;
-    mapRef.current?.flyTo({
-      center: [midLng, midLat],
-      zoom: 11,
-      speed: 1.0,
-      curve: 1.42,
-      essential: true
-    });
-  }, [activeHarbour, harborConfig]);
+    smoothMoveMap(midLng, midLat, 11, 0.8);
+  }, [activeHarbour, harborConfig, smoothMoveMap]);
 
   // Anomaly styling helpers
   const dotColor = (s: string) => s === 'high' ? 'var(--color-danger)' : s === 'unusual' ? 'var(--color-warning)' : 'var(--color-accent)';
@@ -148,7 +184,7 @@ export default function MapWorkspace() {
     <div className="flex flex-col lg:flex-row h-full w-full relative">
 
       {/* ══════ FULL-BLEED MAP ══════ */}
-      <div className={`${paneClass} flex-1 relative overflow-hidden flex flex-col min-h-0`}>
+      <div ref={containerRef} className={`${paneClass} flex-1 relative overflow-hidden flex flex-col min-h-0`}>
           <Map
             ref={mapRef}
             cursor="default"
@@ -208,13 +244,7 @@ export default function MapWorkspace() {
                             e.stopPropagation(); 
                             setSelectedAnomalyId(anomaly.id); 
                             setShowAnomalyList(true);
-                            mapRef.current?.flyTo({ 
-                              center: [anomaly.longitude, anomaly.latitude], 
-                              zoom: 11, 
-                              speed: 1.0,
-                              curve: 1.42,
-                              essential: true 
-                            }); 
+                            smoothMoveMap(anomaly.longitude, anomaly.latitude);
                           }}
                         >
                   <div className="relative mb-2 flex items-center justify-center w-5 h-5">
@@ -479,13 +509,7 @@ export default function MapWorkspace() {
                     key={`list-${anomaly.id}`}
                     onClick={() => {
                       setSelectedAnomalyId(anomaly.id);
-                      mapRef.current?.flyTo({ 
-                        center: [anomaly.longitude, anomaly.latitude], 
-                        zoom: 11, 
-                        speed: 1.0,
-                        curve: 1.42,
-                        essential: true 
-                      });
+                      smoothMoveMap(anomaly.longitude, anomaly.latitude);
                     }}
                     className={`w-full flex flex-col text-left px-4 py-3 rounded-lg transition-all duration-300 border focus:outline-none ${
                       selectedAnomalyId === anomaly.id
@@ -499,6 +523,7 @@ export default function MapWorkspace() {
                     </div>
                     <div className="text-[9px] text-text-secondary font-mono flex gap-3 opacity-80">
                       <span>SC: <span className="text-text-primary">{anomaly.overallScore}</span></span>
+                      <span>CF: <span className="text-text-primary">{(anomaly.confidence).toFixed(0)}%</span></span>
                       <span>D: <span className="text-text-primary">{anomaly.depthMeters}m</span></span>
                     </div>
                   </button>

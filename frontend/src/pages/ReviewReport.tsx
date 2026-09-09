@@ -60,7 +60,10 @@ const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0
     setSelectedId(data.find(a => a.reviewStatus === 'pending')?.id || data[0].id);
   }
  } else {
- setAnomalies(prev => [...prev, ...data]);
+        setAnomalies(prev => {
+          const newAnomalies = data.filter(d => !prev.some(p => p.id === d.id));
+          return [...prev, ...newAnomalies];
+        });
  }
  setHasMore(data.length === 10);
  } catch (e) {
@@ -108,11 +111,16 @@ const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0
  setTimeout(() => setShowToast(null), 3000);
  };
 
- const handleDecision = async (decision: 'confirmed_unknown' | 'known_object' | 'false_positive') => {
- if (!selectedId) return;
- try {
- const updated = await submitReview(selectedId, { status: decision, notes });
- setAnomalies(prev => prev.map(a => a.id === selectedId ? updated : a));
+  const handleDecision = async (decision: 'accept' | 'reject' | 'reclassify') => {
+  if (!selectedId) return;
+  try {
+  const statusMapping = {
+    'accept': 'confirmed_unknown',
+    'reject': 'false_positive',
+    'reclassify': 'known_object'
+  } as const;
+  const updated = await submitReview(selectedId, { status: statusMapping[decision], notes });
+  setAnomalies(prev => prev.map(a => a.id === selectedId ? updated : a));
  
  // Update local feedback count for demo
  if (feedbackData) {
@@ -259,9 +267,15 @@ const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0
  <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(selectedAnomaly.detectedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} UTC</span>
  </div>
  </div>
- <div className="text-right flex flex-col items-end">
- <div className="text-4xl font-mono font-bold text-danger leading-none">{selectedAnomaly.overallScore}</div>
- <div className="text-[9px] text-text-secondary uppercase tracking-[0.2em] font-bold mt-1">Anomaly Score</div>
+ <div className="text-right flex items-center gap-4">
+   <div className="flex flex-col items-end">
+     <div className="text-2xl font-mono font-bold text-text-primary leading-none">{(selectedAnomaly.confidence).toFixed(1)}%</div>
+     <div className="text-[9px] text-text-secondary uppercase tracking-[0.2em] font-bold mt-1">Confidence</div>
+   </div>
+   <div className="flex flex-col items-end border-l border-border pl-4">
+     <div className="text-4xl font-mono font-bold text-danger leading-none">{selectedAnomaly.overallScore}</div>
+     <div className="text-[9px] text-text-secondary uppercase tracking-[0.2em] font-bold mt-1">Overall Score</div>
+   </div>
  </div>
  </div>
  
@@ -417,25 +431,25 @@ const paneClass = 'bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0
  
  <div className="flex flex-col gap-2">
  <button 
- onClick={() => handleDecision('confirmed_unknown')}
+ onClick={() => handleDecision('accept')}
  className="w-full text-left px-4 py-3 bg-void hover:bg-surface border border-border transition-colors text-text-primary font-mono text-[11px] uppercase tracking-widest flex items-center justify-between group"
  >
- Confirm Unknown
+ Accept
  <CheckCircle2 className="w-4 h-4 text-[#B993FF] opacity-0 group-hover:opacity-100 transition-opacity" />
  </button>
  <button 
- onClick={() => handleDecision('known_object')}
+ onClick={() => handleDecision('reject')}
  className="w-full text-left px-4 py-3 bg-void hover:bg-surface border border-border transition-colors text-text-primary font-mono text-[11px] uppercase tracking-widest flex items-center justify-between group"
  >
- Label as Known
- <CheckCircle2 className="w-4 h-4 text-cyan opacity-0 group-hover:opacity-100 transition-opacity" />
+ Reject
+ <CheckCircle2 className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
  </button>
  <button 
- onClick={() => handleDecision('false_positive')}
+ onClick={() => handleDecision('reclassify')}
  className="w-full text-left px-4 py-3 bg-void hover:bg-surface border border-border transition-colors text-text-primary font-mono text-[11px] uppercase tracking-widest flex items-center justify-between group"
  >
- False Positive
- <CheckCircle2 className="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+ Reclassify
+ <CheckCircle2 className="w-4 h-4 text-cyan opacity-0 group-hover:opacity-100 transition-opacity" />
  </button>
  <button 
  onClick={() => setShowNewClassModal(true)}

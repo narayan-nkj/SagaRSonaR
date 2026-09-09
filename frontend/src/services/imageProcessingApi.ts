@@ -35,7 +35,7 @@ export interface RegionCandidate {
 
 export interface ImageProcessingJobResponse {
   jobId: string;
-  status: 'queued' | 'processing' | 'assessed' | 'completed' | 'failed';
+  status: 'queued' | 'processing' | 'assessed' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   stage: string;
   originalImageUrl?: string;
@@ -121,5 +121,16 @@ export const imageProcessingApi = {
       }
     });
     if (!res.ok) throw new Error('Failed to delete job');
+  },
+
+  cancelJob: async (jobId: string): Promise<void> => {
+    const token = sessionStorage.getItem('sagar_token');
+    const res = await fetch(`${API_BASE_URL}/v1/image-processing/jobs/${jobId}/cancel`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
+    if (!res.ok) throw new Error('Failed to cancel job');
   }
 };

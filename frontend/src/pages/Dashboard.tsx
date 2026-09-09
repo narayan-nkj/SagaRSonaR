@@ -51,7 +51,7 @@ export default function Dashboard() {
             [Math.min(harborLng, selectedAnomalyLng), Math.min(harborLat, selectedAnomalyLat)],
             [Math.max(harborLng, selectedAnomalyLng), Math.max(harborLat, selectedAnomalyLat)]
           ],
-          { padding: 100, duration: 3500, maxZoom: 13, essential: true }
+          { padding: 100, duration: 2500, maxZoom: 13, essential: true }
         );
       } else {
         const midLng = (harborConfig.lng + harborConfig.waterCenter.lng) / 2;
@@ -61,8 +61,9 @@ export default function Dashboard() {
           zoom: 11,
           pitch: 0,
           bearing: 0,
-          speed: 1.5,
-          curve: 1
+          speed: 0.8,
+          curve: 1.42,
+          essential: true
         });
       }
     }

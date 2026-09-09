@@ -82,7 +82,8 @@ export const Map = forwardRef(({ initialViewState, children, onIdle, interactive
           style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
           attributionControl={false}
           crossSourceCollisions={false}
-          renderWorldCopies={true}
+          renderWorldCopies={false}
+          preserveDrawingBuffer={true}
         >
           {children}
         </ReactMapGL>

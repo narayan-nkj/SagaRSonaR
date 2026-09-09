@@ -34,7 +34,7 @@ class ImageProcessingService:
 
         start_time = time.time()
         job.status = "processing"
-        job.stage = "loading and validation"
+        job.stage = "uploading"
         job.progress = 10
         db.commit()
 
@@ -57,6 +57,10 @@ class ImageProcessingService:
             else:
                 img_gray = img
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.stage = "noise reduction"
             job.progress = 20
             db.commit()
@@ -64,6 +68,10 @@ class ImageProcessingService:
             # 2. Speckle/Noise Reduction
             denoised = cv2.medianBlur(img_gray, 5)
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.stage = "contrast enhancement"
             job.progress = 30
             db.commit()
@@ -72,6 +80,10 @@ class ImageProcessingService:
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
             enhanced = clahe.apply(denoised)
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.stage = "pixel normalization"
             job.progress = 40
             db.commit()
@@ -85,6 +97,10 @@ class ImageProcessingService:
             normalized = np.clip(enhanced, p1, p99)
             normalized = cv2.normalize(normalized, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.stage = "resolution standardization"
             job.progress = 50
             db.commit()
@@ -101,7 +117,11 @@ class ImageProcessingService:
             y_offset = (target_size - new_h) // 2
             padded[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = resized
 
-            job.stage = "quality assessment"
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
+            job.stage = "sonar quality assessment"
             job.progress = 60
             db.commit()
 
@@ -129,6 +149,10 @@ class ImageProcessingService:
             }
             if sat_pixels > 10: qa["warnings"].append("High saturation detected.")
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.stage = "quality mask generation"
             job.progress = 70
             db.commit()
@@ -169,6 +193,10 @@ class ImageProcessingService:
             color_mask[mask == 3] = [0, 0, 255] # blue
             color_mask[mask == 4] = [255, 0, 0] # red
 
+            
+            db.refresh(job)
+            if job.status == "cancelled":
+                return
             job.processed_image_path = ImageProcessingService._save_file(padded, f"{base_name}_processed.png")
             job.quality_mask_path = ImageProcessingService._save_file(color_mask, f"{base_name}_qmask.png")
             
@@ -191,7 +219,7 @@ class ImageProcessingService:
             
             job.processing_duration_ms = int((time.time() - start_time) * 1000)
             job.status = "assessed"
-            job.stage = "waiting for analysis"
+            job.stage = "preparing visual output"
             job.progress = 100
             db.commit()
 
@@ -211,7 +239,7 @@ class ImageProcessingService:
 
         start_time = time.time()
         job.status = "processing"
-        job.stage = "running anomaly detection"
+        job.stage = "shadow and object analysis"
         job.progress = 50
         db.commit()
 
@@ -252,24 +280,76 @@ class ImageProcessingService:
                 # Fallback heuristic
                 _, shadow_thresh = cv2.threshold(img, 40, 255, cv2.THRESH_BINARY_INV)
                 contours, _ = cv2.findContours(shadow_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                # --- Per-region feature extraction ---
                 for i, cnt in enumerate(contours):
                     if cv2.contourArea(cnt) > 500:
                         x, y, w, h = cv2.boundingRect(cnt)
+                        region_crop = img[y:y+h, x:x+w]
+                        if region_crop.size == 0:
+                            continue
+
+                        region_mean = float(np.mean(region_crop))
+                        global_mean = float(np.mean(img))
+                        region_std  = float(np.std(region_crop))
+                        global_std  = float(np.std(img)) + 1e-6
+
+                        # brightnessReturn: how bright the return is (0=dark=shadow, 1=bright=strong echo)
+                        brightness_return = round(float(np.clip(region_mean / 255.0, 0, 1)), 3)
+
+                        # shadowContinuity: fraction of pixels darker than 40 (acoustic shadow threshold)
+                        dark_pixels = float(np.sum(region_crop < 40)) / (region_crop.size + 1e-6)
+                        shadow_continuity = round(float(np.clip(dark_pixels, 0, 1)), 3)
+
+                        # shapeScore: compactness / circularity of contour (circle=1, irregular=low)
+                        area = cv2.contourArea(cnt)
+                        perimeter = cv2.arcLength(cnt, True) + 1e-6
+                        circularity = 4 * np.pi * area / (perimeter ** 2)
+                        shape_score = round(float(np.clip(circularity, 0, 1)), 3)
+
+                        # textureScore: normalised std inside region (high texture = complex surface)
+                        texture_score = round(float(np.clip(region_std / 128.0, 0, 1)), 3)
+
+                        # seabedSimilarity: how similar region is to global background (high=natural seabed)
+                        mean_diff = abs(region_mean - global_mean) / (global_std + 1e-6)
+                        seabed_similarity = round(float(np.clip(1.0 - mean_diff / 4.0, 0, 1)), 3)
+
+                        # objectConfidence: regions with mid-brightness + shape consistency are likely objects
+                        object_conf = round(float(np.clip(shape_score * (1 - shadow_continuity) * brightness_return, 0, 1)), 3)
+                        shadow_conf = round(float(np.clip(shadow_continuity * (1 - brightness_return), 0, 1)), 3)
+                        uncertainty = round(float(np.clip(1.0 - max(object_conf, shadow_conf), 0, 1)), 3)
+
+                        # Label based on dominant signal
+                        if shadow_conf > 0.6:
+                            label = "likely_shadow"
+                        elif object_conf > 0.5:
+                            label = "likely_object"
+                        elif seabed_similarity > 0.7:
+                            label = "natural_seabed_feature"
+                        else:
+                            label = "uncertain"
+
+                        explanation = (
+                            f"Region at ({x},{y}) size {w}×{h}px. "
+                            f"Mean brightness {region_mean:.1f}/255. "
+                            f"Shadow coverage {shadow_continuity*100:.0f}%, shape circularity {circularity:.2f}. "
+                            f"Classified as '{label.replace('_', ' ')}' with {max(object_conf, shadow_conf)*100:.0f}% primary confidence."
+                        )
+
                         regions.append({
                             "id": f"candidate-{i}",
-                            "label": "likely_shadow",
-                            "objectConfidence": 0.2,
-                            "shadowConfidence": 0.8,
-                            "uncertainty": 0.3,
+                            "label": label,
+                            "objectConfidence": object_conf,
+                            "shadowConfidence": shadow_conf,
+                            "uncertainty": uncertainty,
                             "boundingBox": {"x": float(x), "y": float(y), "width": float(w), "height": float(h)},
                             "features": {
-                                "brightnessReturn": float(np.mean(img[y:y+h, x:x+w])),
-                                "shadowContinuity": 0.9,
-                                "shapeScore": 0.7,
-                                "textureScore": 0.5,
-                                "seabedSimilarity": 0.4
+                                "brightnessReturn": brightness_return,
+                                "shadowContinuity": shadow_continuity,
+                                "shapeScore": shape_score,
+                                "textureScore": texture_score,
+                                "seabedSimilarity": seabed_similarity
                             },
-                            "explanation": "Heuristic estimate: Large dark region indicative of acoustic shadow."
+                            "explanation": explanation
                         })
                 
             job.region_analysis = json.dumps(regions)

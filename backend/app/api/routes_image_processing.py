@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi.responses import FileResponse
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 import os
@@ -184,3 +185,60 @@ def delete_job(
     db.delete(job)
     db.commit()
     return None
+
+@router.post("/jobs/{job_id}/cancel", status_code=200)
+def cancel_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    job = db.query(ImageProcessingJob).filter(ImageProcessingJob.id == job_id, ImageProcessingJob.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    if job.status not in ["queued", "processing", "assessed"]:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel job in state: {job.status}")
+        
+    job.status = "cancelled"
+    job.stage = "cancelled"
+    db.commit()
+    
+    return {"message": "Job cancellation requested"}
+
+@router.get("/jobs/{job_id}/download/{asset_type}")
+def download_asset(
+    job_id: str,
+    asset_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    job = db.query(ImageProcessingJob).filter(ImageProcessingJob.id == job_id, ImageProcessingJob.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    path = None
+    if asset_type == "original":
+        path = job.original_image_path
+    elif asset_type == "processed":
+        path = job.processed_image_path
+    elif asset_type == "quality_mask":
+        path = job.quality_mask_path
+    elif asset_type == "inference_mask":
+        path = job.inference_mask_path
+    elif asset_type == "shadow_overlay":
+        path = job.shadow_overlay_path
+    else:
+        raise HTTPException(status_code=400, detail="Invalid asset type")
+        
+    if not path:
+        raise HTTPException(status_code=404, detail="Asset not generated yet")
+        
+    file_path = os.path.join(settings.UPLOAD_DIR, os.path.basename(path))
+    if not os.path.exists(file_path):
+        # Fallback check inside processing_results
+        file_path = os.path.join(settings.UPLOAD_DIR, "processing_results", os.path.basename(path))
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found on server")
+            
+    return FileResponse(file_path, filename=os.path.basename(path))
+

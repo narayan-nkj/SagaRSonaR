@@ -56,9 +56,12 @@ export default function BootScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="fixed inset-0 z-[100] bg-[#0A0D12] flex flex-col items-center justify-center overflow-hidden">
       
-      {/* Soft radial glow behind the chakra */}
+      {/* Soft radial glow behind the chakra - replaced blur with smooth radial gradient to eliminate banding */}
       <div className="absolute inset-0 flex items-center justify-center opacity-40">
-        <div className="w-[400px] h-[400px] bg-[#DCA454]/10 rounded-full blur-[100px] mix-blend-screen" />
+        <div 
+          className="w-[500px] h-[500px] rounded-full mix-blend-screen" 
+          style={{ background: 'radial-gradient(circle at center, rgba(220,164,84,0.15) 0%, rgba(220,164,84,0) 70%)' }} 
+        />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full px-8 space-y-16">
@@ -71,8 +74,8 @@ export default function BootScreen({ onComplete }: { onComplete: () => void }) {
         {/* Minimal Progress Bar */}
         <div className="w-48 h-[2px] bg-glass-strong rounded-full overflow-hidden relative">
           <div 
-            className="absolute top-0 left-0 bottom-0 bg-gradient-to-r from-[#45A796] via-[#DCA454] to-[#DCA454] transition-all duration-75 ease-linear rounded-full"
-            style={{ width: `${progress}%` }}
+            className="absolute top-0 left-0 bottom-0 w-full bg-gradient-to-r from-[#45A796] via-[#DCA454] to-[#DCA454] transition-transform duration-100 ease-linear rounded-full"
+            style={{ transform: `scaleX(${progress / 100})`, transformOrigin: 'left' }}
           />
         </div>
         

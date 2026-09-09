@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadCloud, File, CheckCircle2, FileJson, Image as ImageIcon, ArrowRight, AlertCircle, Anchor } from 'lucide-react';
-import { startSurveyProcessing } from '../services/api';
+import { imageProcessingApi, ImageProcessingJobResponse } from '../services/imageProcessingApi';
 
 type ProcessState = 'upload' | 'processing' | 'complete';
 
@@ -20,7 +20,8 @@ export default function UploadProcess() {
     surveyName: '', vessel: '', area: '', surveyDate: '', depthRange: '', baselineRef: ''
   });
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
-  const [pipelineResult, setPipelineResult] = useState<any>(null);
+  const [pipelineResult, setPipelineResult] = useState<ImageProcessingJobResponse | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
 
   const hasFiles = selectedFiles.length > 0;
 
@@ -33,46 +34,50 @@ export default function UploadProcess() {
   ];
 
   useEffect(() => {
-    if (appState !== 'processing') return;
-    let p = 0;
-    let logIndex = 0;
-    
-    Promise.resolve().then(() => setTerminalLogs([`> Initiating S.A.G.A.R. pipeline for survey...`]));
-    
-    const interval = setInterval(() => {
-      p += Math.random() * 5 + 1;
-      
-      if (p > (logIndex + 1) * 20 && logIndex < steps.length) {
-         setTerminalLogs(prev => [...prev, `> ${steps[logIndex]}... [OK]`]);
-         logIndex++;
-      }
-      
-      if (p >= 95) {
-        p = 95;
-      }
-      setProgress(p);
-    }, 200);
-
-    const runPipeline = async () => {
-      try {
+    let interval: ReturnType<typeof setInterval>;
+    if (appState === 'processing') {
+      if (!jobId) {
+        setTerminalLogs(['> Initiating S.A.G.A.R. pipeline for survey...']);
+        setProgress(5);
         const imgFile = selectedFiles.find(f => f.name.match(/\.(png|jpg|jpeg)$/i));
-        const res = await startSurveyProcessing(imgFile);
-        if (res && res.anomalies && res.anomalies.length > 0) {
-            setPipelineResult(res.anomalies[0]);
+        if (imgFile) {
+          imageProcessingApi.createJob(imgFile).then((res: any) => {
+            setJobId(res.jobId);
+          }).catch(err => {
+            setTerminalLogs(prev => [...prev, `> Error: ${err.message}`]);
+          });
+        } else {
+          setTerminalLogs(prev => [...prev, `> Error: No valid image file found.`]);
         }
-        clearInterval(interval);
-        setProgress(100);
-        setTerminalLogs(prev => [...prev, `> Pipeline execution finished. Ready for review.`]);
-        setAppState('complete');
-      } catch (err) {
-        clearInterval(interval);
-        setTerminalLogs(prev => [...prev, `> Pipeline execution failed: ${err}`]);
+      } else {
+        interval = setInterval(async () => {
+          try {
+            const status = await imageProcessingApi.getJobStatus(jobId);
+            setProgress(status.progress);
+            if (!terminalLogs.includes(`> ${status.stage}...`)) {
+              setTerminalLogs(prev => [...prev, `> ${status.stage}...`]);
+            }
+            if (status.status === 'assessed') {
+              setTerminalLogs(prev => [...prev, `> Quality assessment pass. Analyzing anomalies...`]);
+              await imageProcessingApi.analyzeJob(jobId);
+            } else if (status.status === 'completed') {
+              setPipelineResult(status);
+              setTerminalLogs(prev => [...prev, `> Pipeline execution finished. Ready for review.`]);
+              setAppState('complete');
+              clearInterval(interval);
+            } else if (status.status === 'failed') {
+              setTerminalLogs(prev => [...prev, `> Pipeline execution failed.`]);
+              clearInterval(interval);
+            }
+          } catch (err: any) {
+            setTerminalLogs(prev => [...prev, `> Status fetch error: ${err.message}`]);
+            clearInterval(interval);
+          }
+        }, 1000);
       }
-    };
-    runPipeline();
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appState]);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [appState, jobId, selectedFiles, terminalLogs]);
 
   const handleStartAnalysis = () => {
     if (!hasFiles) { setShowErrorToast(true); setTimeout(() => setShowErrorToast(false), 3000); return; }
@@ -121,7 +126,10 @@ export default function UploadProcess() {
   return (
     <div className="relative flex-1 w-full flex flex-col h-full bg-void text-text-primary overflow-hidden">
       {/* ── FULL SCREEN DARK TECH BACKGROUND ── */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-glass-strong)_0%,_var(--color-void)_50%)]">
+      <div 
+        className="absolute inset-0 z-0" 
+        style={{ background: 'radial-gradient(ellipse at top right, rgba(255,255,255,0.06) 0%, rgba(10,13,18,1) 80%)' }}
+      >
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAyKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50 mix-blend-overlay" />
       </div>
 
@@ -145,7 +153,7 @@ export default function UploadProcess() {
               <Anchor className="w-3.5 h-3.5 text-text-secondary" />
               <span className="text-[9px] text-text-secondary font-mono uppercase tracking-[0.2em]">Data Ingestion</span>
             </div>
-            <h2 className="text-xl font-display font-bold uppercase tracking-[0.1em] text-text-primary">Survey Upload</h2>
+            <h2 className="text-xl font-display font-bold uppercase tracking-[0.1em] text-text-primary">Survey Pipeline</h2>
             <p className="text-text-secondary text-[11px] font-mono mt-1">Import sonar data and metadata for baseline comparison.</p>
           </div>
 
@@ -310,29 +318,27 @@ export default function UploadProcess() {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mt-4 mb-4">
                    <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Seabed Nature</span>
-                      <span className="text-[13px] font-bold text-text-primary uppercase">{pipelineResult?.seabed_nature || 'Unknown'}</span>
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Quality Score</span>
+                      <span className="text-[13px] font-bold text-text-primary uppercase">{pipelineResult?.qualityAssessment?.overallScore || 'N/A'}/100</span>
                    </div>
                    <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Classification</span>
-                      <span className="text-[13px] font-bold text-accent uppercase">{pipelineResult?.type || 'None'}</span>
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Coverage</span>
+                      <span className="text-[13px] font-bold text-accent uppercase">{pipelineResult?.qualityAssessment?.imageCoveragePercentage || 'N/A'}%</span>
                    </div>
                    <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Risk Level</span>
-                      <span className={`text-[13px] font-bold uppercase ${pipelineResult?.risk_level === 'CRITICAL' || pipelineResult?.risk_level === 'HIGH' ? 'text-danger' : 'text-warning'}`}>{pipelineResult?.risk_level || 'LOW'}</span>
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Data Dropout</span>
+                      <span className={`text-[13px] font-bold uppercase ${pipelineResult?.qualityAssessment?.dataDropoutPercentage && pipelineResult.qualityAssessment.dataDropoutPercentage > 10 ? 'text-danger' : 'text-success'}`}>{pipelineResult?.qualityAssessment?.dataDropoutPercentage || '0'}%</span>
                    </div>
                    <div className="bg-glass-strong border border-glass-border p-4 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
-                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Geolocation</span>
-                      <span className="text-[10px] font-mono text-text-primary leading-tight mt-1">
-                        {pipelineResult?.latitude ? `${pipelineResult.latitude.toFixed(4)}° N` : 'N/A'}<br/>
-                        {pipelineResult?.longitude ? `${pipelineResult.longitude.toFixed(4)}° E` : 'N/A'}<br/>
-                        Depth: {pipelineResult?.depth ? `${pipelineResult.depth.toFixed(1)}m` : 'N/A'}
+                      <span className="text-[9px] text-text-secondary font-mono uppercase tracking-widest mb-1">Detections</span>
+                      <span className="text-[13px] font-mono text-text-primary leading-tight mt-1">
+                        {pipelineResult?.regionAnalysis?.length || 0}
                       </span>
                    </div>
                 </div>
 
                 <p className="text-[11px] text-text-secondary font-mono text-center uppercase tracking-widest max-w-sm">
-                  Model has identified <span className="text-danger font-bold">{pipelineResult ? '1' : '0'}</span> high-risk anomaly requiring verification.
+                  Model has identified <span className="text-danger font-bold">{pipelineResult?.regionAnalysis?.length || '0'}</span> potential anomalies requiring verification.
                 </p>
                 <button
                   onClick={() => navigate('/map')}

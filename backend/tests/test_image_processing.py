@@ -75,7 +75,7 @@ def wait_for_job(client, job_id, headers, timeout=10):
     while time.time() - start < timeout:
         res = client.get(f"/api/v1/image-processing/jobs/{job_id}", headers=headers)
         status = res.json()["status"]
-        if status in ["completed", "failed"]:
+        if status in ["assessed", "completed", "failed"]:
             return res.json()
         time.sleep(0.5)
     raise TimeoutError("Job did not complete in time")
@@ -94,7 +94,7 @@ def test_image_processing_valid_upload(client: TestClient, admin_token_headers):
 
     # Wait for completion
     result = wait_for_job(client, data["jobId"], admin_token_headers)
-    assert result["status"] == "completed"
+    assert result["status"] == "assessed"
     assert result["progress"] == 100
     assert "originalImageUrl" in result
     assert "processedImageUrl" in result
@@ -136,3 +136,39 @@ def test_image_processing_unauthorized(client: TestClient):
         files={"file": ("test.png", img_bytes, "image/png")}
     )
     assert response.status_code == 401
+
+
+def test_image_processing_cancel(client: TestClient, admin_token_headers):
+    img_bytes = generate_image(format='PNG')
+    response = client.post(
+        "/api/v1/image-processing/jobs",
+        headers=admin_token_headers,
+        files={"file": ("test.png", img_bytes, "image/png")}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    job_id = data["jobId"]
+    
+    # Immediately cancel
+    cancel_res = client.post(f"/api/v1/image-processing/jobs/{job_id}/cancel", headers=admin_token_headers)
+    assert cancel_res.status_code == 200
+    
+    # Wait to ensure it is cancelled
+    res = client.get(f"/api/v1/image-processing/jobs/{job_id}", headers=admin_token_headers)
+    assert res.json()["status"] == "cancelled"
+
+def test_image_processing_download_original(client: TestClient, admin_token_headers):
+    img_bytes = generate_image(format='PNG')
+    response = client.post(
+        "/api/v1/image-processing/jobs",
+        headers=admin_token_headers,
+        files={"file": ("test.png", img_bytes, "image/png")}
+    )
+    data = response.json()
+    job_id = data["jobId"]
+    
+    # Wait for completion
+    wait_for_job(client, job_id, admin_token_headers)
+    
+    download_res = client.get(f"/api/v1/image-processing/jobs/{job_id}/download/original", headers=admin_token_headers)
+    assert download_res.status_code == 200

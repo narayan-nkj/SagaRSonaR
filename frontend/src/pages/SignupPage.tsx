@@ -19,7 +19,41 @@ export default function SignupPage() {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
   const { login } = useUser();
+
+  React.useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || resendLoading) return;
+    setResendLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || 'Failed to resend code');
+      }
+      setResendCooldown(60);
+      // We can show a temporary success message or just let the user know it was sent
+    } catch (err: any) {
+      setError(err.message || 'Error resending code');
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const validatePassword = (pass: string) => {
     if (pass.length < 8) return "Password must be at least 8 characters.";
@@ -179,6 +213,16 @@ export default function SignupPage() {
               >
                 {isVerifying ? 'Verifying...' : 'Verify Access Code'}
               </button>
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendCooldown > 0 || resendLoading}
+                  className="text-[11px] font-mono tracking-widest uppercase text-text-muted hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {resendLoading ? 'Sending...' : resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+                </button>
+              </div>
           </form>
         </div>
       </div>
